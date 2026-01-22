@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SugarandSpice — Design Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #0C0C0C; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const colors = {
+      bg: '#0C0C0C',
+      primary: '#E8E8E8',
+      accent: '#A0A0A0',
+      accentLight: '#C4C4C4',
+      accentDark: '#6B6B6B',
+      accentGlow: '#A0A0A020',
+      muted: '#5A5A5A',
+      elevated: '#141414',
+      border: '#252525',
+      success: '#A67B5B',
+      highlight: '#FFFFFF',
+      glitch1: '#C4C4C4',
+      glitch2: '#6B6B6B'
+    };
+
+    function CustomCursor() {
+      const [pos, setPos] = useState({ x: -100, y: -100 });
+      const [isHovering, setIsHovering] = useState(false);
+      const [isClicking, setIsClicking] = useState(false);
+      
+      useEffect(() => {
+        let frame;
+        let targetX = -100, targetY = -100;
+        let currentX = -100, currentY = -100;
+        
+        const animate = () => {
+          currentX += (targetX - currentX) * 0.15;
+          currentY += (targetY - currentY) * 0.15;
+          setPos({ x: currentX, y: currentY });
+          frame = requestAnimationFrame(animate);
+        };
+        
+        const handleMove = (e) => {
+          targetX = e.clientX;
+          targetY = e.clientY;
+        };
+        
+        const handleOver = (e) => {
+          setIsHovering(!!e.target.closest('a, button, [data-hover]'));
+        };
+        
+        const handleDown = () => setIsClicking(true);
+        const handleUp = () => setIsClicking(false);
+        
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseover', handleOver);
+        window.addEventListener('mousedown', handleDown);
+        window.addEventListener('mouseup', handleUp);
+        frame = requestAnimationFrame(animate);
+        
+        return () => {
+          window.removeEventListener('mousemove', handleMove);
+          window.removeEventListener('mouseover', handleOver);
+          window.removeEventListener('mousedown', handleDown);
+          window.removeEventListener('mouseup', handleUp);
+          cancelAnimationFrame(frame);
+        };
+      }, []);
+      
+      return (
+        <>
+          <div style={{
+            position: 'fixed',
+            left: pos.x,
+            top: pos.y,
+            width: isHovering ? '60px' : '12px',
+            height: isHovering ? '60px' : '12px',
+            borderRadius: '50%',
+            border: `1px solid ${colors.highlight}`,
+            backgroundColor: isClicking ? colors.accentGlow : 'transparent',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            transition: 'width 0.3s ease, height 0.3s ease',
+            mixBlendMode: 'difference'
+          }}/>
+          <div style={{
+            position: 'fixed',
+            left: pos.x,
+            top: pos.y,
+            width: '4px',
+            height: '4px',
+            borderRadius: '50%',
+            backgroundColor: colors.highlight,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            opacity: isHovering ? 0 : 1,
+            transition: 'opacity 0.2s ease'
+          }}/>
+        </>
+      );
+    }
+
+    function GlitchText({ children, intensity = 'medium' }) {
+      const [isGlitching, setIsGlitching] = useState(false);
+      
+      useEffect(() => {
+        const glitch = () => {
+          setIsGlitching(true);
+          setTimeout(() => setIsGlitching(false), 200);
+        };
+        const interval = setInterval(glitch, intensity === 'high' ? 3000 : 5000);
+        return () => clearInterval(interval);
+      }, [intensity]);
+      
+      return (
+        <span style={{ position: 'relative', display: 'inline-block' }}>
+          <span>{children}</span>
+          <span aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+            color: colors.glitch1,
+            clipPath: isGlitching ? 'inset(20% 0 30% 0)' : 'inset(0 0 100% 0)',
+            transform: isGlitching ? 'translateX(-3px)' : 'translateX(0)',
+            opacity: 0.8
+          }}>{children}</span>
+          <span aria-hidden="true" style={{
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+            color: colors.glitch2,
+            clipPath: isGlitching ? 'inset(60% 0 10% 0)' : 'inset(100% 0 0 0)',
+            transform: isGlitching ? 'translateX(3px)' : 'translateX(0)',
+            opacity: 0.8
+          }}>{children}</span>
+        </span>
+      );
+    }
+
+    function ScrambleText({ children, trigger = true }) {
+      const [display, setDisplay] = useState(children);
+      const chars = '!<>-_\\/[]{}—=+*^?#_';
+      
+      useEffect(() => {
+        if (!trigger) return;
+        const text = children.toString();
+        let iteration = 0;
+        const interval = setInterval(() => {
+          setDisplay(text.split('').map((char, i) => {
+            if (i < iteration) return text[i];
+            if (char === ' ') return ' ';
+            return chars[Math.floor(Math.random() * chars.length)];
+          }).join(''));
+          iteration += 1/3;
+          if (iteration >= text.length) {
+            clearInterval(interval);
+            setDisplay(text);
+          }
+        }, 30);
+        return () => clearInterval(interval);
+      }, [children, trigger]);
+      
+      return <span>{display}</span>;
+    }
+
+    function Magnetic({ children, strength = 0.3 }) {
+      const ref = useRef(null);
+      const [transform, setTransform] = useState({ x: 0, y: 0 });
+      
+      const handleMove = (e) => {
+        if (!ref.current) return;
+        const rect = ref.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        setTransform({
+          x: (e.clientX - centerX) * strength,
+          y: (e.clientY - centerY) * strength
+        });
+      };
+      
+      return (
+        <div ref={ref} onMouseMove={handleMove} onMouseLeave={() => setTransform({ x: 0, y: 0 })}
+          style={{ transform: `translate(${transform.x}px, ${transform.y}px)`, transition: 'transform 0.4s ease' }}>
+          {children}
+        </div>
+      );
+    }
+
+    function useInView(threshold = 0.2) {
+      const ref = useRef(null);
+      const [inView, setInView] = useState(false);
+      useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) { setInView(true); observer.disconnect(); }
+        }, { threshold });
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+      }, [threshold]);
+      return [ref, inView];
+    }
+
+    function Reveal({ children, delay = 0, direction = 'up' }) {
+      const [ref, inView] = useInView(0.15);
+      const transforms = {
+        up: 'translateY(60px)', down: 'translateY(-60px)',
+        left: 'translateX(60px)', right: 'translateX(-60px)',
+        scale: 'scale(0.9)', rotate: 'rotate(-5deg) scale(0.95)'
+      };
+      return (
+        <div ref={ref} style={{
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0) scale(1) rotate(0)' : transforms[direction],
+          transition: `all 1s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`
+        }}>{children}</div>
+      );
+    }
+
+    function SplitReveal({ children, delay = 0 }) {
+      const [ref, inView] = useInView(0.3);
+      const words = children.toString().split(' ');
+      return (
+        <span ref={ref} style={{ display: 'inline' }}>
+          {words.map((word, i) => (
+            <span key={i} style={{ display: 'inline-block', overflow: 'hidden', marginRight: '0.25em' }}>
+              <span style={{
+                display: 'inline-block',
+                transform: inView ? 'translateY(0)' : 'translateY(120%)',
+                transition: `transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay + i * 60}ms`
+              }}>{word}</span>
+            </span>
+          ))}
+        </span>
+      );
+    }
+
+    function MorphingWord({ words, interval = 2500 }) {
+      const [index, setIndex] = useState(0);
+      const [phase, setPhase] = useState('visible');
+      
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setPhase('glitch');
+          setTimeout(() => {
+            setPhase('hidden');
+            setTimeout(() => {
+              setIndex(prev => (prev + 1) % words.length);
+              setPhase('visible');
+            }, 150);
+          }, 200);
+        }, interval);
+        return () => clearInterval(timer);
+      }, [words.length, interval]);
+      
+      return (
+        <span style={{ display: 'inline-block', minWidth: '320px', position: 'relative' }}>
+          <span style={{
+            display: 'inline-block',
+            opacity: phase === 'hidden' ? 0 : 1,
+            transform: phase === 'glitch' ? 'translateX(-5px) skewX(-5deg)' : 'translateY(0)',
+            filter: phase === 'glitch' ? 'blur(2px)' : 'blur(0)',
+            transition: phase === 'glitch' ? 'none' : 'all 0.3s ease'
+          }}>{words[index]}</span>
+        </span>
+      );
+    }
+
+    function AnimatedLine({ delay = 0 }) {
+      const [ref, inView] = useInView(0.5);
+      return (
+        <div ref={ref} style={{
+          height: '1px',
+          background: `linear-gradient(90deg, ${colors.accent}, ${colors.border})`,
+          transformOrigin: 'left',
+          transform: inView ? 'scaleX(1)' : 'scaleX(0)',
+          transition: `transform 1s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`
+        }}/>
+      );
+    }
+
+    function TerminalTime() {
+      const [time, setTime] = useState(new Date());
+      const [blink, setBlink] = useState(true);
+      useEffect(() => {
+        const t = setInterval(() => setTime(new Date()), 1000);
+        const b = setInterval(() => setBlink(v => !v), 500);
+        return () => { clearInterval(t); clearInterval(b); };
+      }, []);
+      return (
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+          {time.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <span style={{ opacity: blink ? 1 : 0, color: colors.highlight }}>_</span>
+        </span>
+      );
+    }
+
+    function HeroTerminal({ scrollY }) {
+      const [phase, setPhase] = useState(0);
+      const [typedText, setTypedText] = useState('');
+      const [showCursor, setShowCursor] = useState(true);
+      const [strikeLines, setStrikeLines] = useState([]);
+      
+      const lines = [
+        { text: 'just pretty pixels' },
+        { text: 'just fast turnaround' },
+        { text: 'just safe choices' },
+      ];
+      const finalLine = 'the full package + brain';
+      
+      useEffect(() => {
+        const cursorInterval = setInterval(() => setShowCursor(v => !v), 530);
+        return () => clearInterval(cursorInterval);
+      }, []);
+      
+      useEffect(() => {
+        let timeout;
+        if (phase < lines.length) {
+          const currentLine = lines[phase].text;
+          let charIndex = 0;
+          const typeChar = () => {
+            if (charIndex <= currentLine.length) {
+              setTypedText(currentLine.slice(0, charIndex));
+              charIndex++;
+              timeout = setTimeout(typeChar, 40);
+            } else {
+              timeout = setTimeout(() => {
+                setStrikeLines(prev => [...prev, phase]);
+                timeout = setTimeout(() => {
+                  setTypedText('');
+                  setPhase(p => p + 1);
+                }, 300);
+              }, 200);
+            }
+          };
+          timeout = setTimeout(typeChar, phase === 0 ? 2000 : 150);
+        } else if (phase === lines.length) {
+          let charIndex = 0;
+          const typeChar = () => {
+            if (charIndex <= finalLine.length) {
+              setTypedText(finalLine.slice(0, charIndex));
+              charIndex++;
+              timeout = setTimeout(typeChar, 60);
+            }
+          };
+          timeout = setTimeout(typeChar, 400);
+        }
+        return () => clearTimeout(timeout);
+      }, [phase]);
+      
+      return (
+        <div style={{
+          position: 'absolute', right: '10%', top: '50%',
+          transform: `translateY(-50%) translateY(${scrollY * -0.05}px)`,
+          fontFamily: '"IBM Plex Mono", monospace', fontSize: '14px',
+          pointerEvents: 'none', userSelect: 'none'
+        }}>
+          {lines.map((line, i) => (
+            <div key={i} style={{
+              marginBottom: '6px',
+              opacity: strikeLines.includes(i) ? 0.35 : (i < phase ? 0.35 : (i === phase ? 1 : 0)),
+              transition: 'opacity 0.3s ease',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <span style={{ color: '#8B6B61', fontSize: '11px', width: '12px' }}>
+                {strikeLines.includes(i) ? '✗' : (i === phase ? '>' : '')}
+              </span>
+              <span style={{
+                color: strikeLines.includes(i) ? '#6B5B55' : colors.muted,
+                textDecoration: strikeLines.includes(i) ? 'line-through' : 'none',
+                textDecorationColor: '#8B6B61'
+              }}>
+                {i === phase ? typedText : (i < phase ? line.text : '')}
+                {i === phase && phase < lines.length && (
+                  <span style={{ opacity: showCursor ? 1 : 0, color: colors.muted }}>▋</span>
+                )}
+              </span>
+            </div>
+          ))}
+          {phase >= lines.length && (
+            <div style={{
+              marginTop: '16px', paddingTop: '12px',
+              borderTop: `1px solid ${colors.border}`,
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <span style={{ color: colors.success, fontSize: '11px', width: '12px' }}>→</span>
+              <span style={{ color: colors.success }}>
+                {typedText}
+                <span style={{ opacity: showCursor ? 1 : 0 }}>▋</span>
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function SassyPrompt() {
+      const [input, setInput] = useState('');
+      const [response, setResponse] = useState('');
+      const [isTyping, setIsTyping] = useState(false);
+      
+      const responses = [
+        { keywords: ['price', 'cost', 'much', 'rate', 'kosten', 'preis'], response: "floor is 10k. for a reason." },
+        { keywords: ['cheap', 'cheaper', 'billig', 'günstig'], response: "try fiverr." },
+        { keywords: ['discount', 'deal', 'rabatt'], response: "no." },
+        { keywords: ['budget', 'afford'], response: "if you have to ask..." },
+        { keywords: ['fast', 'schnell', 'speed'], response: "fast, cheap, good. pick two." },
+        { keywords: ['urgent', 'dringend', 'rush'], response: "urgency costs extra." },
+        { keywords: ['deadline', 'when', 'wann', 'time'], response: "depends. yesterday? no." },
+        { keywords: ['portfolio', 'work', 'examples', 'projects'], response: "scroll up." },
+        { keywords: ['experience', 'erfahrung', 'years'], response: "since 2017. still learning." },
+        { keywords: ['available', 'free', 'verfügbar', 'capacity'], response: "maybe. impress me." },
+        { keywords: ['hire', 'book', 'buchen'], response: "convince me why." },
+        { keywords: ['who', 'wer', 'name', 'about'], response: "anna. it's on the page." },
+        { keywords: ['good', 'gut', 'best', 'talented'], response: "yes." },
+        { keywords: ['hello', 'hi', 'hey', 'hallo'], response: "hi. got a real question?" },
+        { keywords: ['design', 'designer', 'grafik'], response: "that's the job. what's the project?" },
+        { keywords: ['crypto', 'blockchain', 'web3'], response: "my turf. finally someone interesting." },
+        { keywords: ['fintech', 'finance', 'trading'], response: "fintech is home. what do you need?" },
+        { keywords: ['meeting', 'call', 'zoom'], response: "max 1 per week. I have things to do." },
+      ];
+      
+      const defaultResponses = [
+        "google it.", "not my department.", "try again.",
+        "read the page.", "email me. maybe.", "mhm. next.",
+        "cute question.", "that requires coffee first.",
+        "ask your last designer. oh wait.", "classified.",
+      ];
+      
+      const getResponse = (text) => {
+        const lower = text.toLowerCase();
+        for (const item of responses) {
+          if (item.keywords.some(kw => lower.includes(kw))) return item.response;
+        }
+        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+      };
+      
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+        setIsTyping(true);
+        setResponse('');
+        const answer = getResponse(input);
+        let i = 0;
+        const typeChar = () => {
+          if (i < answer.length) {
+            setResponse(answer.slice(0, i + 1));
+            i++;
+            setTimeout(typeChar, 30);
+          } else {
+            setIsTyping(false);
+          }
+        };
+        setTimeout(typeChar, 300);
+        setInput('');
+      };
+      
+      return (
+        <div style={{ marginTop: '24px', borderTop: `1px solid ${colors.border}`, paddingTop: '20px', pointerEvents: 'auto' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: colors.success }}>{'>'}</span>
+            <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
+              placeholder="ask me anything"
+              style={{
+                background: 'transparent', border: 'none', outline: 'none',
+                color: colors.primary, fontFamily: 'inherit', fontSize: '12px',
+                width: '100%', caretColor: colors.success, cursor: 'text'
+              }}
+            />
+          </form>
+          {response && (
+            <div style={{ marginTop: '12px', color: colors.success, fontSize: '12px', display: 'flex', gap: '8px' }}>
+              <span style={{ color: colors.muted }}>{'<'}</span>
+              <span>{response}{isTyping && '▋'}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      const [loaded, setLoaded] = useState(false);
+      const [scrollY, setScrollY] = useState(0);
+      const [scrollProgress, setScrollProgress] = useState(0);
+      const [hoverProject, setHoverProject] = useState(null);
+      const footerRef = useRef(null);
+      
+      useEffect(() => {
+        setTimeout(() => setLoaded(true), 100);
+        const handleScroll = () => {
+          setScrollY(window.scrollY);
+          const footerHeight = footerRef.current?.offsetHeight || 0;
+          const documentHeight = document.documentElement.scrollHeight;
+          const windowHeight = window.innerHeight;
+          const maxScroll = documentHeight - windowHeight - footerHeight;
+          setScrollProgress(maxScroll > 0 ? Math.min((window.scrollY / maxScroll) * 100, 100) : 0);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+
+      const projects = [
+        { id: 'moonberg', name: 'Moonberg', type: 'Brand & Product', year: '2023–', status: 'ongoing' },
+        { id: 'stealth', name: 'Confidential', type: 'Fintech Identity', year: '2018–22', status: 'nda' },
+        { id: 'presets', name: 'Preset Collection', type: 'Lightroom', year: '2026–', status: 'live' }
+      ];
+
+      const headlineStyle = {
+        fontFamily: '"Bodoni Moda", "Didot", Georgia, serif',
+        fontWeight: 400, fontStyle: 'normal'
+      };
+
+      return (
+        <div style={{
+          backgroundColor: colors.bg, color: colors.primary, minHeight: '100vh',
+          fontFamily: '"IBM Plex Mono", monospace', fontSize: '14px', cursor: 'none'
+        }}>
+          <CustomCursor />
+          
+          {/* Grain */}
+          <div style={{
+            position: 'fixed', inset: 0,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            opacity: 0.04, pointerEvents: 'none', zIndex: 1000, mixBlendMode: 'overlay'
+          }}/>
+          
+          {/* Progress */}
+          <div style={{
+            position: 'fixed', top: 0, left: 0, height: '2px',
+            width: `${scrollProgress}%`, background: colors.highlight, zIndex: 1002
+          }}/>
+
+          {/* Header */}
+          <header style={{
+            position: 'fixed', top: 2, left: 0, right: 0, height: '52px',
+            backgroundColor: `${colors.elevated}f0`, borderBottom: `1px solid ${colors.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 32px', zIndex: 100, backdropFilter: 'blur(16px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['#FF5F57', '#FFBD2E', '#28CA41'].map((bg, i) => (
+                  <div key={i} data-hover style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: bg }}/>
+                ))}
+              </div>
+              <span style={{ color: colors.muted, fontSize: '12px', opacity: loaded ? 1 : 0, transition: 'opacity 0.6s ease 0.5s' }}>
+                <GlitchText>sugar_spice</GlitchText> — zsh
+              </span>
+            </div>
+            <div style={{ color: colors.muted, fontSize: '11px', letterSpacing: '0.08em' }}>
+              <TerminalTime />
+            </div>
+          </header>
+
+          {/* Fixed coords */}
+          <div style={{ position: 'fixed', left: '32px', bottom: '32px', fontSize: '10px', color: colors.muted, letterSpacing: '0.15em', zIndex: 40 }}>
+            <div style={{ opacity: 0.5, marginBottom: '6px' }}>ZÜRICH</div>
+            <div style={{ color: colors.accent }}>47.3769° N</div>
+          </div>
+          <div style={{ position: 'fixed', right: '32px', bottom: '32px', fontSize: '10px', color: colors.muted, letterSpacing: '0.15em', textAlign: 'right', zIndex: 40 }}>
+            <div style={{ opacity: 0.5, marginBottom: '6px' }}>DEPTH</div>
+            <div style={{ color: colors.accent }}>{Math.round(scrollProgress)}%</div>
+          </div>
+
+          <main style={{ paddingTop: '54px' }}>
+            {/* HERO */}
+            <section style={{
+              minHeight: 'calc(100vh - 54px)', display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', padding: '80px', position: 'relative', overflow: 'hidden'
+            }}>
+              <HeroTerminal scrollY={scrollY} />
+              
+              <div style={{ position: 'relative', maxWidth: '1100px' }}>
+                <div style={{
+                  marginBottom: '48px', fontSize: '12px', color: colors.muted,
+                  opacity: loaded ? 1 : 0, transform: loaded ? 'translateY(0)' : 'translateY(20px)',
+                  transition: 'all 0.8s ease 0.2s'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: colors.success }}>→</span> <ScrambleText trigger={loaded}>cd ~/sugar_spice</ScrambleText>
+                  </div>
+                  <div>
+                    <span style={{ color: colors.success }}>→</span> <ScrambleText trigger={loaded}>./run --selective</ScrambleText>
+                  </div>
+                </div>
+                
+                <h1 style={{ ...headlineStyle, fontSize: 'clamp(72px, 14vw, 160px)', lineHeight: 0.85, letterSpacing: '-0.04em', marginBottom: '56px' }}>
+                  <span style={{
+                    display: 'block', opacity: loaded ? 1 : 0,
+                    transform: loaded ? 'translateY(0)' : 'translateY(100%)',
+                    transition: 'all 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s'
+                  }}>
+                    <MorphingWord words={['Brands', 'Systems', 'Interfaces', 'Strategy']} />
+                  </span>
+                  <span style={{
+                    display: 'block', color: colors.highlight, opacity: loaded ? 1 : 0,
+                    transform: loaded ? 'translateY(0)' : 'translateY(100%)',
+                    transition: 'all 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.7s'
+                  }}>
+                    <GlitchText>that cut through.</GlitchText>
+                  </span>
+                </h1>
+                
+                <p style={{
+                  fontSize: '15px', color: colors.muted, maxWidth: '520px', lineHeight: 1.8,
+                  opacity: loaded ? 1 : 0, transition: 'opacity 1s ease 1.2s'
+                }}>
+                  <span style={{ color: colors.highlight }}>Anna.</span> Design for tech, crypto, fintech.
+                  <br/>One person. The whole thing. No middlemen.
+                </p>
+                
+                <div style={{
+                  display: 'flex', gap: '64px', marginTop: '64px', fontSize: '12px',
+                  opacity: loaded ? 1 : 0, transition: 'opacity 1s ease 1.4s'
+                }}>
+                  {[
+                    { label: 'base', value: 'Zürich', color: colors.accent },
+                    { label: 'capacity', value: '● selective', color: colors.success },
+                    { label: 'since', value: '2017', color: colors.primary }
+                  ].map((stat, i) => (
+                    <div key={i} data-hover style={{ padding: '8px' }}>
+                      <div style={{ color: colors.muted, marginBottom: '6px', fontSize: '10px', letterSpacing: '0.12em' }}>{stat.label}</div>
+                      <div style={{ color: stat.color, fontWeight: 500 }}>{stat.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div style={{
+                position: 'absolute', bottom: '48px', left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px'
+              }}>
+                <span style={{ fontSize: '10px', color: colors.muted, letterSpacing: '0.2em' }}>
+                  <ScrambleText trigger={loaded}>SCROLL</ScrambleText>
+                </span>
+                <div style={{ width: '1px', height: '60px', backgroundColor: colors.border, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{
+                    position: 'absolute', width: '100%', height: '30px',
+                    background: `linear-gradient(to bottom, transparent, ${colors.highlight}, transparent)`,
+                    animation: 'scrollLine 2s ease-in-out infinite'
+                  }}/>
+                </div>
+              </div>
+            </section>
+
+            {/* MANIFESTO */}
+            <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '180px 80px', borderTop: `1px solid ${colors.border}` }}>
+              <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+                <div style={{ fontSize: '11px', color: colors.muted, letterSpacing: '0.2em', marginBottom: '60px' }}>
+                  <span style={{ opacity: 0.3 }}>01</span> — <span style={{ color: colors.accent }}><GlitchText>APPROACH</GlitchText></span>
+                </div>
+                
+                <Reveal direction="rotate">
+                  <h2 style={{ ...headlineStyle, fontSize: 'clamp(44px, 7vw, 80px)', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '80px' }}>
+                    <SplitReveal>I don't decorate.</SplitReveal>
+                    <br/>
+                    <span style={{ color: colors.highlight }}><SplitReveal delay={250}>I decide.</SplitReveal></span>
+                  </h2>
+                </Reveal>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '80px', fontSize: '15px', lineHeight: 2.1, color: colors.muted, maxWidth: '900px' }}>
+                  <Reveal delay={100}>
+                    <p>Every pixel earns its place. I work with founders who treat design as <span style={{ color: colors.primary }}>competitive edge</span> — not a last-minute polish before launch.</p>
+                  </Reveal>
+                  <Reveal delay={200}>
+                    <p>No account managers. No feedback loops through five people. <span style={{ color: colors.primary }}>You talk to me.</span> I've shipped products from zero.</p>
+                  </Reveal>
+                </div>
+              </div>
+            </section>
+
+            {/* WORK */}
+            <section style={{ padding: '180px 80px', borderTop: `1px solid ${colors.border}`, borderBottom: `1px solid ${colors.border}` }}>
+              <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+                <div style={{ fontSize: '11px', color: colors.muted, letterSpacing: '0.2em', marginBottom: '60px' }}>
+                  <span style={{ opacity: 0.3 }}>02</span> — <span style={{ color: colors.accent }}><GlitchText>WORK</GlitchText></span>
+                </div>
+                
+                <AnimatedLine />
+                {projects.map((project, i) => (
+                  <div key={project.id}>
+                    <Reveal delay={i * 120}>
+                      <div data-hover onMouseEnter={() => setHoverProject(project.id)} onMouseLeave={() => setHoverProject(null)}
+                        style={{
+                          padding: '56px 0', display: 'grid', gridTemplateColumns: '1fr 180px 100px 100px',
+                          alignItems: 'center', gap: '32px', cursor: 'none', position: 'relative'
+                        }}>
+                        <div style={{
+                          position: 'absolute', left: '-20px', top: '50%', transform: 'translateY(-50%)',
+                          width: '3px', height: hoverProject === project.id ? '60px' : '0px',
+                          backgroundColor: colors.success, transition: 'height 0.4s ease'
+                        }}/>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                          <h3 style={{
+                            ...headlineStyle, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.02em',
+                            color: hoverProject === project.id ? colors.highlight : colors.primary,
+                            transition: 'color 0.4s ease'
+                          }}>
+                            {hoverProject === project.id ? <GlitchText intensity="high">{project.name}</GlitchText> : project.name}
+                          </h3>
+                          <span style={{
+                            fontSize: '24px', opacity: hoverProject === project.id ? 1 : 0,
+                            transform: hoverProject === project.id ? 'translateX(0)' : 'translateX(-10px)',
+                            transition: 'all 0.3s ease', color: colors.success
+                          }}>→</span>
+                        </div>
+                        <div style={{ color: hoverProject === project.id ? colors.primary : colors.muted, fontSize: '12px', transition: 'color 0.3s ease' }}>{project.type}</div>
+                        <div style={{ color: colors.muted, fontSize: '12px' }}>{project.year}</div>
+                        <div style={{
+                          fontSize: '11px', textAlign: 'right',
+                          color: project.status === 'ongoing' ? colors.success : project.status === 'live' ? colors.highlight : colors.muted,
+                          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px'
+                        }}>
+                          {project.status === 'ongoing' && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: colors.success, animation: 'pulse 2s infinite' }}/>}
+                          {project.status}
+                        </div>
+                      </div>
+                    </Reveal>
+                    <AnimatedLine delay={i * 120 + 60} />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ABOUT */}
+            <section style={{ padding: '180px 80px' }}>
+              <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '100px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: colors.muted, letterSpacing: '0.2em', marginBottom: '60px' }}>
+                    <span style={{ opacity: 0.3 }}>03</span> — <span style={{ color: colors.accent }}><GlitchText>ABOUT</GlitchText></span>
+                  </div>
+                  <Reveal delay={100}>
+                    <h3 style={{ ...headlineStyle, fontSize: '48px', marginBottom: '36px' }}><GlitchText>Anna</GlitchText></h3>
+                  </Reveal>
+                  <Reveal delay={200}>
+                    <p style={{ fontSize: '15px', lineHeight: 2, color: colors.muted }}>
+                      Swiss design education. Top of class. Self-taught web since 2017. Currently Head of Design at Moonberg.
+                    </p>
+                  </Reveal>
+                </div>
+                
+                <Reveal delay={150} direction="left">
+                  <div style={{
+                    backgroundColor: colors.elevated, border: `1px solid ${colors.border}`,
+                    borderRadius: '6px', padding: '36px', fontSize: '12px'
+                  }}>
+                    <div style={{ color: colors.muted, marginBottom: '24px' }}>
+                      <span style={{ color: colors.accent }}>//</span> config
+                    </div>
+                    
+                    <div style={{ marginBottom: '8px' }}><span style={{ color: colors.highlight }}>focus</span>: [</div>
+                    {['crypto', 'fintech', 'tech', 'trading', 'network marketing'].map((item, i) => (
+                      <div key={i} style={{ paddingLeft: '20px', color: colors.muted }}>"{item}",</div>
+                    ))}
+                    <div style={{ marginBottom: '20px' }}>]</div>
+                    
+                    <div style={{ marginBottom: '8px' }}><span style={{ color: colors.highlight }}>tools</span>: [</div>
+                    {['Figma', 'Adobe CC', 'you name it'].map((tool, i) => (
+                      <div key={i} style={{ paddingLeft: '20px', color: colors.muted }}>"{tool}",</div>
+                    ))}
+                    <div style={{ marginBottom: '20px' }}>]</div>
+                    
+                    <div><span style={{ color: colors.highlight }}>lang</span>: <span style={{ color: colors.muted }}>["de", "en"]</span></div>
+                    <div style={{ marginTop: '20px' }}><span style={{ color: colors.highlight }}>floor</span>: <span style={{ color: colors.primary }}>"CHF 10k+"</span></div>
+                    
+                    <SassyPrompt />
+                  </div>
+                </Reveal>
+              </div>
+            </section>
+
+            {/* CONTACT */}
+            <section style={{
+              minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderTop: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', width: '700px', height: '700px', border: `1px solid ${colors.border}`, borderRadius: '50%', opacity: 0.15, animation: 'rotate 60s linear infinite' }}/>
+              <div style={{ position: 'absolute', width: '500px', height: '500px', border: `1px solid ${colors.accent}`, borderRadius: '50%', opacity: 0.1, animation: 'rotate 40s linear infinite reverse' }}/>
+              
+              <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, padding: '0 32px' }}>
+                <Reveal>
+                  <div style={{ fontSize: '11px', color: colors.muted, letterSpacing: '0.25em', marginBottom: '48px' }}>
+                    04 — <GlitchText>CONTACT</GlitchText>
+                  </div>
+                </Reveal>
+                
+                <Reveal delay={150}>
+                  <h2 style={{ ...headlineStyle, fontSize: 'clamp(52px, 12vw, 130px)', lineHeight: 0.9, letterSpacing: '-0.03em', marginBottom: '72px' }}>
+                    Not window shopping?<br/>
+                    <span style={{ color: colors.highlight }}><GlitchText intensity="high">Reach out.</GlitchText></span>
+                  </h2>
+                </Reveal>
+                
+                <Reveal delay={300}>
+                  <a href="mailto:hello@sugarandspice.ch" data-hover
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '16px', fontSize: '15px', color: colors.muted, textDecoration: 'none', padding: '16px 0', cursor: 'none' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = colors.highlight}
+                    onMouseLeave={(e) => e.currentTarget.style.color = colors.muted}>
+                    <ScrambleText trigger={true}>hello@sugarandspice.ch</ScrambleText>
+                    <span style={{ fontSize: '18px' }}>→</span>
+                  </a>
+                </Reveal>
+                
+                <Reveal delay={450}>
+                  <p style={{ marginTop: '56px', fontSize: '11px', color: colors.muted, letterSpacing: '0.12em' }}>
+                    10k+ · 24h reply · no spec work · no endless calls
+                  </p>
+                </Reveal>
+              </div>
+            </section>
+
+            {/* Footer */}
+            <footer ref={footerRef} style={{
+              padding: '40px 80px', borderTop: `1px solid ${colors.border}`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              fontSize: '11px', color: colors.muted, backgroundColor: colors.bg, position: 'relative', zIndex: 50
+            }}>
+              <div>© 2024 <GlitchText>sugar_spice</GlitchText> GmbH</div>
+              <div style={{ display: 'flex', gap: '48px' }}>
+                {['Imprint', 'Privacy'].map((link) => (
+                  <a key={link} href="#" data-hover style={{ color: colors.muted, textDecoration: 'none', cursor: 'none' }}
+                    onMouseEnter={(e) => e.target.style.color = colors.highlight}
+                    onMouseLeave={(e) => e.target.style.color = colors.muted}>{link}</a>
+                ))}
+              </div>
+              <div>Zürich</div>
+            </footer>
+          </main>
+
+          <style>{`
+            * { cursor: none; }
+            ::selection { background: ${colors.highlight}; color: ${colors.bg}; }
+            @keyframes scrollLine { 0% { top: -30px; opacity: 0; } 30% { opacity: 1; } 100% { top: 80px; opacity: 0; } }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+            @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            ::-webkit-scrollbar { width: 4px; }
+            ::-webkit-scrollbar-track { background: ${colors.bg}; }
+            ::-webkit-scrollbar-thumb { background: ${colors.accentDark}; border-radius: 2px; }
+            @media (max-width: 1024px) {
+              * { cursor: auto !important; }
+              section { padding: 120px 24px !important; }
+            }
+            @media (max-width: 768px) {
+              div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+            }
+          `}</style>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
