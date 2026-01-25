@@ -1635,7 +1635,7 @@
                 transition: 'opacity 0.6s ease 0.5s',
                 cursor: 'pointer'
             }}>
-              <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary, borderBottom: `2px solid ${colors.success}`, paddingBottom: '2px' }}>spice</span>{!isMobile && ' \u2014 zsh'}
+              <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary }}>spice</span>{!isMobile && ' \u2014 zsh'}
             </span>
 
             {isMobile ? (
@@ -1716,17 +1716,17 @@
                   </div>
                 </div>
 
-                {/* Headline */}
+                {/* Headline - Golden Ratio sizing (1.618) */}
                 <h1 style={{
                   ...headlineStyle,
-                  fontSize: isMobile ? 'clamp(72px, 18vw, 120px)' : 'clamp(72px, 14vw, 160px)',
                   lineHeight: 0.85,
                   letterSpacing: '-0.04em',
                   marginBottom: isMobile ? '32px' : '56px',
-                  maxWidth: '900px'
+                  maxWidth: '1000px'
                 }}>
                   <span style={{
                     display: 'block',
+                    fontSize: isMobile ? 'clamp(56px, 14vw, 99px)' : 'clamp(56px, 9vw, 99px)',
                     opacity: loaded ? 1 : 0,
                     transform: loaded ? 'translateY(0) skewY(0)' : 'translateY(100%) skewY(5deg)',
                     transition: 'all 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s'
@@ -1735,6 +1735,7 @@
                   </span>
                   <span style={{
                     display: 'block',
+                    fontSize: isMobile ? 'clamp(90px, 23vw, 160px)' : 'clamp(90px, 14vw, 160px)',
                     color: colors.highlight,
                     opacity: loaded ? 1 : 0,
                     transform: loaded ? 'translateY(0) skewY(0)' : 'translateY(100%) skewY(5deg)',
@@ -2330,7 +2331,7 @@
               position: 'relative',
               zIndex: 50
             }}>
-              <div>{'\u00A9'} 2024 <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary, borderBottom: `2px solid ${colors.success}`, paddingBottom: '1px' }}>spice</span> GmbH</div>
+              <div>{'\u00A9'} 2024 <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary }}>spice</span> GmbH</div>
               <div style={{ display: 'flex', gap: isMobile ? '24px' : '48px' }}>
                 {['Imprint', 'Privacy'].map((link) => (
                   <Magnetic key={link} strength={0.3}>
