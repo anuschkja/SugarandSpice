@@ -128,97 +128,18 @@
       }, [callback]);
     }
 
-    // Shake detection for mobile easter egg
-    function useShakeDetection(callback, threshold = 25) {
-      const lastShakeRef = useRef(0);
-      const shakeCountRef = useRef(0);
-      const permissionGrantedRef = useRef(false);
-      const listenerAddedRef = useRef(false);
-
+    // Three-finger tap detection for mobile easter egg
+    function useThreeFingerTap(callback) {
       useEffect(() => {
-        let lastX = 0, lastY = 0, lastZ = 0;
-
-        const handleMotion = (e) => {
-          const { x, y, z } = e.accelerationIncludingGravity || {};
-          if (x === null || y === null || z === null) return;
-
-          const deltaX = Math.abs(x - lastX);
-          const deltaY = Math.abs(y - lastY);
-          const deltaZ = Math.abs(z - lastZ);
-
-          if (deltaX + deltaY + deltaZ > threshold) {
-            const now = Date.now();
-            if (now - lastShakeRef.current > 300) {
-              shakeCountRef.current++;
-              lastShakeRef.current = now;
-
-              // Trigger after 3 shakes within 2 seconds
-              if (shakeCountRef.current >= 3) {
-                callback();
-                shakeCountRef.current = 0;
-              }
-
-              // Reset count after 2 seconds of no shaking
-              setTimeout(() => {
-                if (Date.now() - lastShakeRef.current > 2000) {
-                  shakeCountRef.current = 0;
-                }
-              }, 2000);
-            }
-          }
-
-          lastX = x; lastY = y; lastZ = z;
-        };
-
-        const startListening = () => {
-          if (listenerAddedRef.current) return;
-          listenerAddedRef.current = true;
-          window.addEventListener('devicemotion', handleMotion);
-        };
-
-        // iOS 13+ requires permission request from user gesture
-        const requestPermission = async () => {
-          if (permissionGrantedRef.current) return;
-
-          if (typeof DeviceMotionEvent !== 'undefined' &&
-              typeof DeviceMotionEvent.requestPermission === 'function') {
-            try {
-              const permission = await DeviceMotionEvent.requestPermission();
-              if (permission === 'granted') {
-                permissionGrantedRef.current = true;
-                startListening();
-              }
-            } catch (e) {
-              console.log('Motion permission denied');
-            }
-          } else {
-            // Non-iOS or older iOS - no permission needed
-            permissionGrantedRef.current = true;
-            startListening();
+        const handleTouch = (e) => {
+          if (e.touches.length === 3) {
+            callback();
           }
         };
 
-        // For iOS: request permission on first touch
-        const handleFirstTouch = () => {
-          requestPermission();
-          document.removeEventListener('touchstart', handleFirstTouch);
-        };
-
-        // Check if permission API exists (iOS 13+)
-        if (typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function') {
-          document.addEventListener('touchstart', handleFirstTouch, { once: true });
-        } else {
-          // Android/Desktop - just start listening
-          startListening();
-        }
-
-        return () => {
-          window.removeEventListener('devicemotion', handleMotion);
-          document.removeEventListener('touchstart', handleFirstTouch);
-          listenerAddedRef.current = false;
-        };
-      }, [callback, threshold]);
+        document.addEventListener('touchstart', handleTouch);
+        return () => document.removeEventListener('touchstart', handleTouch);
+      }, [callback]);
     }
 
     // Loading Screen Component
@@ -1058,7 +979,7 @@
         // Easter Eggs
         { keywords: ['free', 'gratis', 'kostenlos', 'umsonst', 'freebie'], response: "lol. no." },
         { keywords: ['secret', 'geheimnis', 'hidden', 'versteckt', 'easter'], response: "you found one. congrats. now hire me." },
-        { keywords: ['konami'], response: "↑↑↓↓←→←→BA on desktop. shake your phone on mobile." },
+        { keywords: ['konami'], response: "↑↑↓↓←→←→BA on desktop. three-finger tap on mobile." },
         { keywords: ['sass', 'sassy', 'frech', 'attitude'], response: "it's a feature, not a bug." },
         { keywords: ['steal', 'copy', 'klauen', 'kopieren'], response: "I'll know. designers always know." },
       ];
@@ -1449,7 +1370,7 @@
       useKonamiCode(triggerNerdEgg);
 
       // Shake Easter Egg (mobile) - shake phone 3x
-      useShakeDetection(triggerNerdEgg);
+      useThreeFingerTap(triggerNerdEgg);
 
       // Logo click easter egg
       useEffect(() => {
