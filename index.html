@@ -53,7 +53,22 @@
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
+
+    @keyframes tongueOut {
+      0% { max-height: 0; opacity: 0; }
+      100% { max-height: 100px; opacity: 1; }
+    }
+
+    @keyframes tongueWiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+
+    @keyframes eyesBlink {
+      0%, 90%, 100% { transform: scaleY(1); }
+      95% { transform: scaleY(0.1); }
+    }
+
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #0C0C0C; }
     ::-webkit-scrollbar-thumb { background: #6B6B6B; border-radius: 2px; }
@@ -1338,6 +1353,96 @@
       );
     }
 
+    function NerdEggModal({ show, onClose }) {
+      const [tongueOut, setTongueOut] = useState(false);
+
+      useEffect(() => {
+        if (show) {
+          setTimeout(() => setTongueOut(true), 300);
+        } else {
+          setTongueOut(false);
+        }
+      }, [show]);
+
+      if (!show) return null;
+
+      return (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(12, 12, 12, 0.95)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <div style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '14px',
+            color: colors.success,
+            marginBottom: '32px',
+            letterSpacing: '0.1em'
+          }}>
+            nerd detected.
+          </div>
+
+          <div style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '32px',
+            color: colors.primary,
+            textAlign: 'center',
+            lineHeight: 1.2,
+            userSelect: 'none'
+          }}>
+            {/* Eyes */}
+            <div style={{
+              animation: 'eyesBlink 3s ease-in-out infinite',
+              marginBottom: '8px'
+            }}>
+              0 &nbsp;&nbsp;&nbsp; 0
+            </div>
+
+            {/* Mouth */}
+            <div style={{ position: 'relative' }}>
+              <div style={{ marginBottom: '4px' }}>___</div>
+
+              {/* Tongue container */}
+              <div style={{
+                overflow: 'hidden',
+                animation: tongueOut ? 'tongueOut 0.5s ease forwards' : 'none',
+                maxHeight: tongueOut ? '100px' : '0'
+              }}>
+                <div style={{
+                  animation: tongueOut ? 'tongueWiggle 0.3s ease-in-out infinite' : 'none',
+                  color: colors.success,
+                  transformOrigin: 'top center'
+                }}>
+                  <div>|&nbsp;&nbsp;&nbsp;|</div>
+                  <div style={{ fontSize: '24px' }}>\\_/</div>
+                  <div style={{ fontSize: '20px' }}>|</div>
+                  <div style={{ fontSize: '16px' }}>|</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '48px',
+            fontSize: '12px',
+            color: colors.muted,
+            opacity: 0.5
+          }}>
+            tap to dismiss
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const [showLoading, setShowLoading] = useState(true);
       const [loaded, setLoaded] = useState(false);
@@ -1345,23 +1450,17 @@
       const [scrollProgress, setScrollProgress] = useState(0);
       const [hoverProject, setHoverProject] = useState(null);
       const [sassyMode, setSassyMode] = useState(false);
+      const [showNerdEgg, setShowNerdEgg] = useState(false);
       const [logoClicks, setLogoClicks] = useState(0);
       const footerRef = useRef(null);
       const isMobile = useIsMobile();
 
-      // Easter Egg callback (shared by Konami + Shake)
+      // Easter Egg callback (shared by Konami + ThreeFingerTap)
       const triggerNerdEgg = useCallback(() => {
-        if (sassyMode) return; // Only trigger once
+        if (sassyMode) return;
         setSassyMode(true);
+        setShowNerdEgg(true);
         console.log('%c> nerd detected', 'color: #A67B5B; font-size: 16px; font-weight: bold;');
-        alert(`nerd detected.
-
- 0     0
-   ___
-  |   |
-   \\_ _/
-     |
-     |`);
       }, [sassyMode]);
 
       // Konami Code Easter Egg (desktop)
@@ -1420,6 +1519,9 @@
         <>
           {/* Loading Screen */}
           {showLoading && <LoadingScreen onComplete={() => setShowLoading(false)} />}
+
+          {/* Nerd Easter Egg Modal */}
+          <NerdEggModal show={showNerdEgg} onClose={() => setShowNerdEgg(false)} />
 
           <div style={{
             backgroundColor: colors.bg,
