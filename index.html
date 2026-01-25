@@ -148,11 +148,12 @@
       useEffect(() => {
         const handleTouch = (e) => {
           if (e.touches.length === 3) {
+            e.preventDefault();
             callback();
           }
         };
 
-        document.addEventListener('touchstart', handleTouch);
+        document.addEventListener('touchstart', handleTouch, { passive: false });
         return () => document.removeEventListener('touchstart', handleTouch);
       }, [callback]);
     }
