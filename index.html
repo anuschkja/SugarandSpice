@@ -772,11 +772,14 @@
       
       if (isMobile) return null;
       
+      // Position HeroTerminal so its bottom aligns with terminal commands
+      // Content is at 38.2vh from bottom, so starts at ~61.8vh from top
+      // Terminal commands are ~40px tall, HeroTerminal is ~110px tall
       return (
         <div style={{
           position: 'absolute',
           right: '80px',
-          top: '120px',
+          top: 'calc(61.8vh - 70px)',
           transform: `translateY(${scrollY * -0.05}px)`,
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: '14px',
