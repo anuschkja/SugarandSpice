@@ -1820,39 +1820,7 @@
               {/* Terminal Slider - desktop only in hero */}
               {!isCompact && <TerminalSlider />}
 
-              {/* Scroll indicator */}
-              {!isCompact && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '48px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '16px'
-                }}>
-                  <span style={{ fontSize: '10px', color: colors.muted, letterSpacing: '0.2em' }}>
-                    <ScrambleText trigger={loaded}>SCROLL</ScrambleText>
-                  </span>
-                  <div style={{
-                    width: '1px',
-                    height: '60px',
-                    backgroundColor: colors.border,
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '30px',
-                      background: `linear-gradient(to bottom, transparent, ${colors.highlight}, transparent)`,
-                      animation: 'scrollLine 2s ease-in-out infinite'
-                    }}/>
-                  </div>
-                </div>
-              )}
-            </section>
+                          </section>
 
             {/* Terminal Slider - mobile only, below hero */}
             {isMobile && <TerminalSlider />}
