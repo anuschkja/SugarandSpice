@@ -776,7 +776,7 @@
         <div style={{
           position: 'absolute',
           right: '80px',
-          top: '100px',
+          top: 'calc(61.8vh - 134px)',
           transform: `translateY(${scrollY * -0.05}px)`,
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: '14px',
@@ -1701,9 +1701,10 @@
               minHeight: 'calc(100vh - 54px)',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: isCompact ? 'flex-start' : 'flex-end',
-              padding: sectionPadding,
-              paddingTop: isCompact ? '15vh' : 0,
+              justifyContent: 'flex-end',
+              paddingLeft: sectionPadding,
+              paddingRight: sectionPadding,
+              paddingTop: isCompact ? '15vh' : '38.2vh',
               paddingBottom: isCompact ? '10vh' : '38.2vh',
               position: 'relative',
               overflow: 'hidden'
