@@ -88,7 +88,7 @@
   <div id="root"></div>
   
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
     const colors = {
       bg: '#0C0C0C',
@@ -126,6 +126,51 @@
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
       }, [callback]);
+    }
+
+    // Shake detection for mobile easter egg
+    function useShakeDetection(callback, threshold = 25) {
+      const lastShakeRef = useRef(0);
+      const shakeCountRef = useRef(0);
+
+      useEffect(() => {
+        let lastX = 0, lastY = 0, lastZ = 0;
+
+        const handleMotion = (e) => {
+          const { x, y, z } = e.accelerationIncludingGravity || {};
+          if (x === null || y === null || z === null) return;
+
+          const deltaX = Math.abs(x - lastX);
+          const deltaY = Math.abs(y - lastY);
+          const deltaZ = Math.abs(z - lastZ);
+
+          if (deltaX + deltaY + deltaZ > threshold) {
+            const now = Date.now();
+            if (now - lastShakeRef.current > 300) {
+              shakeCountRef.current++;
+              lastShakeRef.current = now;
+
+              // Trigger after 3 shakes within 2 seconds
+              if (shakeCountRef.current >= 3) {
+                callback();
+                shakeCountRef.current = 0;
+              }
+
+              // Reset count after 2 seconds of no shaking
+              setTimeout(() => {
+                if (Date.now() - lastShakeRef.current > 2000) {
+                  shakeCountRef.current = 0;
+                }
+              }, 2000);
+            }
+          }
+
+          lastX = x; lastY = y; lastZ = z;
+        };
+
+        window.addEventListener('devicemotion', handleMotion);
+        return () => window.removeEventListener('devicemotion', handleMotion);
+      }, [callback, threshold]);
     }
 
     // Loading Screen Component
@@ -965,7 +1010,7 @@
         // Easter Eggs
         { keywords: ['free', 'gratis', 'kostenlos', 'umsonst', 'freebie'], response: "lol. no." },
         { keywords: ['secret', 'geheimnis', 'hidden', 'versteckt', 'easter'], response: "you found one. congrats. now hire me." },
-        { keywords: ['konami'], response: "↑↑↓↓←→←→BA. you're welcome." },
+        { keywords: ['konami'], response: "↑↑↓↓←→←→BA on desktop. shake your phone on mobile." },
         { keywords: ['sass', 'sassy', 'frech', 'attitude'], response: "it's a feature, not a bug." },
         { keywords: ['steal', 'copy', 'klauen', 'kopieren'], response: "I'll know. designers always know." },
       ];
@@ -1335,8 +1380,9 @@
       const footerRef = useRef(null);
       const isMobile = useIsMobile();
 
-      // Konami Code Easter Egg
-      useKonamiCode(() => {
+      // Easter Egg callback (shared by Konami + Shake)
+      const triggerNerdEgg = useCallback(() => {
+        if (sassyMode) return; // Only trigger once
         setSassyMode(true);
         console.log('%c> nerd detected', 'color: #A67B5B; font-size: 16px; font-weight: bold;');
         alert(`nerd detected.
@@ -1349,7 +1395,13 @@
     1 0 0 0 0 1
       1 0 0 1
         1 1`);
-      });
+      }, [sassyMode]);
+
+      // Konami Code Easter Egg (desktop)
+      useKonamiCode(triggerNerdEgg);
+
+      // Shake Easter Egg (mobile) - shake phone 3x
+      useShakeDetection(triggerNerdEgg);
 
       // Logo click easter egg
       useEffect(() => {
@@ -1792,7 +1844,7 @@
                   </span>
                 </div>
                 
-                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ minWidth: 0, overflow: 'visible', paddingRight: '4px' }}>
                   <AnimatedLine />
                   {projects.map((project, i) => (
                     <div key={project.id}>
