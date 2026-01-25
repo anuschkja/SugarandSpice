@@ -43,6 +43,16 @@
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+
+    @keyframes underscorePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes bootText {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #0C0C0C; }
@@ -96,6 +106,105 @@
       glitch2: '#6B6B6B'
     };
 
+    // Easter Egg: Console message for developers
+    console.log('%c> oh, a developer. respect.', 'color: #A67B5B; font-family: monospace; font-size: 14px;');
+    console.log('%c> looking for bugs? there are none. only features.', 'color: #5A5A5A; font-family: monospace; font-size: 12px;');
+
+    // Konami Code hook
+    function useKonamiCode(callback) {
+      const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+      const inputRef = useRef([]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          inputRef.current = [...inputRef.current, e.code].slice(-10);
+          if (inputRef.current.join(',') === konamiCode.join(',')) {
+            callback();
+            inputRef.current = [];
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [callback]);
+    }
+
+    // Loading Screen Component
+    function LoadingScreen({ onComplete }) {
+      const [lines, setLines] = useState([]);
+      const [showUnderscore, setShowUnderscore] = useState(true);
+      const [fadeOut, setFadeOut] = useState(false);
+
+      const bootSequence = [
+        { text: '> initializing sugar_spice...', delay: 0 },
+        { text: '> loading attitude... done', delay: 600 },
+        { text: '> calibrating sass... 100%', delay: 1200 },
+        { text: '> ready.', delay: 1800 }
+      ];
+
+      useEffect(() => {
+        bootSequence.forEach(({ text, delay }) => {
+          setTimeout(() => {
+            setLines(prev => [...prev, text]);
+          }, delay);
+        });
+
+        // Start fade out
+        setTimeout(() => setFadeOut(true), 2400);
+        // Complete
+        setTimeout(() => onComplete(), 3000);
+      }, []);
+
+      return (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: colors.bg,
+          zIndex: 99999,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          opacity: fadeOut ? 0 : 1,
+          transition: 'opacity 0.6s ease',
+          pointerEvents: fadeOut ? 'none' : 'auto'
+        }}>
+          {/* Pulsing Underscore */}
+          <div style={{
+            fontSize: '72px',
+            fontFamily: '"IBM Plex Mono", monospace',
+            color: colors.success,
+            marginBottom: '48px',
+            animation: 'underscorePulse 1s ease-in-out infinite'
+          }}>_</div>
+
+          {/* Boot Text */}
+          <div style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '14px',
+            color: colors.muted,
+            textAlign: 'left',
+            minHeight: '120px'
+          }}>
+            {lines.map((line, i) => (
+              <div key={i} style={{
+                marginBottom: '8px',
+                animation: 'bootText 0.3s ease',
+                color: line.includes('ready') ? colors.success : colors.muted
+              }}>
+                {line}
+              </div>
+            ))}
+            {lines.length < 4 && (
+              <span style={{
+                opacity: showUnderscore ? 1 : 0,
+                color: colors.success
+              }}>_</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function useIsMobile() {
       const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
       useEffect(() => {
@@ -111,47 +220,61 @@
       const [isHovering, setIsHovering] = useState(false);
       const [isClicking, setIsClicking] = useState(false);
       const [trail, setTrail] = useState([]);
+      const [isIdle, setIsIdle] = useState(false);
       const isMobile = useIsMobile();
-      
+      const idleTimerRef = useRef(null);
+
       useEffect(() => {
         if (isMobile) return;
-        
+
         let frame;
         let targetX = -100, targetY = -100;
         let currentX = -100, currentY = -100;
-        
+
+        const resetIdleTimer = () => {
+          setIsIdle(false);
+          clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = setTimeout(() => {
+            setIsIdle(true);
+            console.log('%c> still there?', 'color: #5A5A5A; font-style: italic;');
+          }, 30000);
+        };
+
         const animate = () => {
           currentX += (targetX - currentX) * 0.15;
           currentY += (targetY - currentY) * 0.15;
           setPos({ x: currentX, y: currentY });
           frame = requestAnimationFrame(animate);
         };
-        
+
         const handleMove = (e) => {
           targetX = e.clientX;
           targetY = e.clientY;
           setTrail(prev => [...prev.slice(-8), { x: e.clientX, y: e.clientY, id: Date.now() }]);
+          resetIdleTimer();
         };
-        
+
         const handleOver = (e) => {
           setIsHovering(!!e.target.closest('a, button, [data-hover]'));
         };
-        
-        const handleDown = () => setIsClicking(true);
+
+        const handleDown = () => { setIsClicking(true); resetIdleTimer(); };
         const handleUp = () => setIsClicking(false);
-        
+
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseover', handleOver);
         window.addEventListener('mousedown', handleDown);
         window.addEventListener('mouseup', handleUp);
         frame = requestAnimationFrame(animate);
-        
+        resetIdleTimer();
+
         return () => {
           window.removeEventListener('mousemove', handleMove);
           window.removeEventListener('mouseover', handleOver);
           window.removeEventListener('mousedown', handleDown);
           window.removeEventListener('mouseup', handleUp);
           cancelAnimationFrame(frame);
+          clearTimeout(idleTimerRef.current);
         };
       }, [isMobile]);
       
@@ -191,7 +314,8 @@
             pointerEvents: 'none',
             zIndex: 9999,
             transition: 'width 0.3s ease, height 0.3s ease, background-color 0.2s ease',
-            mixBlendMode: 'difference'
+            mixBlendMode: 'difference',
+            animation: isIdle ? 'pulse 2s ease-in-out infinite' : 'none'
           }}/>
           
           <div style={{
@@ -838,6 +962,12 @@
         { keywords: ['fun', 'spass', 'spaß', 'hobby', 'free time', 'freizeit'], response: "what's that?" },
         { keywords: ['married', 'single', 'boyfriend', 'girlfriend', 'date', 'freund'], response: "not relevant. next." },
         { keywords: ['age', 'alter', 'alt', 'old', 'jung', 'young', 'geboren', 'born'], response: "old enough to know better." },
+        // Easter Eggs
+        { keywords: ['free', 'gratis', 'kostenlos', 'umsonst', 'freebie'], response: "lol. no." },
+        { keywords: ['secret', 'geheimnis', 'hidden', 'versteckt', 'easter'], response: "you found one. congrats. now hire me." },
+        { keywords: ['konami'], response: "↑↑↓↓←→←→BA. you're welcome." },
+        { keywords: ['sass', 'sassy', 'frech', 'attitude'], response: "it's a feature, not a bug." },
+        { keywords: ['steal', 'copy', 'klauen', 'kopieren'], response: "I'll know. designers always know." },
       ];
 
       const questionDefaults = [
@@ -1195,16 +1325,39 @@
     }
 
     function App() {
+      const [showLoading, setShowLoading] = useState(true);
       const [loaded, setLoaded] = useState(false);
       const [scrollY, setScrollY] = useState(0);
       const [scrollProgress, setScrollProgress] = useState(0);
       const [hoverProject, setHoverProject] = useState(null);
+      const [sassyMode, setSassyMode] = useState(false);
+      const [logoClicks, setLogoClicks] = useState(0);
       const footerRef = useRef(null);
       const isMobile = useIsMobile();
-      
+
+      // Konami Code Easter Egg
+      useKonamiCode(() => {
+        setSassyMode(true);
+        console.log('%c> ULTRA SASSY MODE ACTIVATED', 'color: #A67B5B; font-size: 16px; font-weight: bold;');
+        alert('🔥 ULTRA SASSY MODE ACTIVATED 🔥\n\nThe sass levels have been calibrated to maximum.');
+      });
+
+      // Logo click easter egg
       useEffect(() => {
-        setTimeout(() => setLoaded(true), 100);
-        
+        if (logoClicks === 5) {
+          console.log('%c> you found the underscore secret.', 'color: #A67B5B;');
+          alert('_\n\nThe gap is intentional.\nLike the space between sugar and spice.');
+          setLogoClicks(0);
+        }
+      }, [logoClicks]);
+
+      useEffect(() => {
+        if (!showLoading) {
+          setTimeout(() => setLoaded(true), 100);
+        }
+      }, [showLoading]);
+
+      useEffect(() => {
         const handleScroll = () => {
           setScrollY(window.scrollY);
           const footerHeight = footerRef.current?.offsetHeight || 0;
@@ -1214,7 +1367,7 @@
           const progress = maxScroll > 0 ? Math.min((window.scrollY / maxScroll) * 100, 100) : 0;
           setScrollProgress(progress);
         };
-        
+
         window.addEventListener('scroll', handleScroll, { passive: true });
         handleScroll();
         return () => window.removeEventListener('scroll', handleScroll);
@@ -1236,16 +1389,22 @@
       const verticalPadding = isMobile ? '100px 0' : '180px 0';
 
       return (
-        <div style={{
-          backgroundColor: colors.bg,
-          color: colors.primary,
-          minHeight: '100vh',
-          fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-          fontSize: '14px',
-          overflowX: 'hidden',
-          maxWidth: '100vw'
-        }}>
-          
+        <>
+          {/* Loading Screen */}
+          {showLoading && <LoadingScreen onComplete={() => setShowLoading(false)} />}
+
+          <div style={{
+            backgroundColor: colors.bg,
+            color: colors.primary,
+            minHeight: '100vh',
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: '14px',
+            overflowX: 'hidden',
+            maxWidth: '100vw',
+            opacity: showLoading ? 0 : 1,
+            transition: 'opacity 0.3s ease'
+          }}>
+
           <CustomCursor />
           
           {/* Scanlines */}
@@ -1300,11 +1459,14 @@
                   </Magnetic>
                 ))}
               </div>
-              <span style={{
-                color: colors.muted,
-                fontSize: '12px',
-                opacity: loaded ? 1 : 0,
-                transition: 'opacity 0.6s ease 0.5s'
+              <span
+                onClick={() => setLogoClicks(prev => prev + 1)}
+                style={{
+                  color: colors.muted,
+                  fontSize: '12px',
+                  opacity: loaded ? 1 : 0,
+                  transition: 'opacity 0.6s ease 0.5s',
+                  cursor: 'pointer'
               }}>
                 <GlitchText>sugar_spice</GlitchText>{!isMobile && ' \u2014 zsh'}
               </span>
@@ -2026,6 +2188,7 @@
             </footer>
           </main>
         </div>
+        </>
       );
     }
 
