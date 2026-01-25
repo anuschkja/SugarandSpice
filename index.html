@@ -776,7 +776,7 @@
         <div style={{
           position: 'absolute',
           right: '80px',
-          top: '20vh',
+          top: '120px',
           transform: `translateY(${scrollY * -0.05}px)`,
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: '14px',
@@ -1696,15 +1696,15 @@
           {/* Main */}
           <main style={{ paddingTop: '54px' }}>
             
-            {/* HERO - Golden Ratio: content at 38.2% from top */}
+            {/* HERO - Golden Ratio: content at 38.2% from bottom (desktop) */}
             <section style={{
               minHeight: 'calc(100vh - 54px)',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'flex-start',
+              justifyContent: isCompact ? 'flex-start' : 'flex-end',
               padding: sectionPadding,
-              paddingTop: isCompact ? '20vh' : '33.2vh',
-              paddingBottom: isCompact ? '12.5vh' : 0,
+              paddingTop: isCompact ? '15vh' : 0,
+              paddingBottom: isCompact ? '10vh' : '38.2vh',
               position: 'relative',
               overflow: 'hidden'
             }}>
@@ -1816,9 +1816,6 @@
                   </div>
                 </div>
               </div>
-
-              {/* Terminal Slider - desktop only in hero */}
-              {!isCompact && <TerminalSlider />}
 
                           </section>
 
