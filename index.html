@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0C0C0C">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>sugar_spice — Design Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,8 +14,8 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { background: #0C0C0C; overflow-x: hidden; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body { background: #0C0C0C; overflow-x: hidden; max-width: 100vw; }
     
     ::selection {
       background: #FFFFFF;
@@ -25,11 +27,17 @@
       30% { opacity: 1; }
       100% { top: 80px; opacity: 0; }
     }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-25%); }
+    }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.5; transform: scale(0.8); }
     }
+
     
     @keyframes rotate {
       from { transform: rotate(0deg); }
@@ -43,6 +51,26 @@
     
     @media (min-width: 769px) {
       * { cursor: none; }
+      input[type="text"], [data-cursor="text"] { cursor: text !important; }
+    }
+
+    @media (max-width: 768px) {
+      button:active, a:active, [data-hover]:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+        transition: all 0.1s ease;
+      }
+    }
+
+    /* Safe area for notched phones */
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      footer {
+        padding-bottom: max(32px, env(safe-area-inset-bottom)) !important;
+      }
     }
   </style>
 </head>
@@ -69,9 +97,9 @@
     };
 
     function useIsMobile() {
-      const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+      const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
       useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        const handleResize = () => setIsMobile(window.innerWidth <= 1024);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
       }, []);
@@ -436,6 +464,44 @@
       );
     }
 
+    function HoverScramble({ children, isHovered }) {
+      const [display, setDisplay] = useState(children);
+      const chars = '!<>-_\\/[]{}=+*^?#@%&';
+      const text = children.toString();
+
+      useEffect(() => {
+        if (!isHovered) {
+          setDisplay(text);
+          return;
+        }
+
+        let iteration = 0;
+        const interval = setInterval(() => {
+          setDisplay(
+            text
+              .split('')
+              .map((char, i) => {
+                if (i < iteration) return text[i];
+                if (char === ' ') return ' ';
+                return chars[Math.floor(Math.random() * chars.length)];
+              })
+              .join('')
+          );
+
+          iteration += 0.5;
+
+          if (iteration >= text.length) {
+            clearInterval(interval);
+            setDisplay(text);
+          }
+        }, 25);
+
+        return () => clearInterval(interval);
+      }, [isHovered, text]);
+
+      return <span>{display}</span>;
+    }
+
     function AnimatedLine({ delay = 0 }) {
       const [ref, inView] = useInView(0.5);
       
@@ -484,7 +550,7 @@
         { text: 'just safe choices' },
       ];
       
-      const finalLine = 'the full package + brain';
+      const finalLine = 'the full package + [brain]';
       
       useEffect(() => {
         const cursorInterval = setInterval(() => setShowCursor(v => !v), 530);
@@ -535,13 +601,14 @@
       return (
         <div style={{
           position: 'absolute',
-          right: '10%',
-          top: '50%',
-          transform: `translateY(-50%) translateY(${scrollY * -0.05}px)`,
+          right: '80px',
+          top: '80px',
+          transform: `translateY(${scrollY * -0.05}px)`,
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: '14px',
           pointerEvents: 'none',
-          userSelect: 'none'
+          userSelect: 'none',
+          textAlign: 'right'
         }}>
           {lines.map((line, i) => (
             <div
@@ -552,16 +619,10 @@
                 transition: 'opacity 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'flex-end',
                 gap: '10px'
               }}
             >
-              <span style={{ 
-                color: '#8B6B61',
-                fontSize: '11px',
-                width: '12px'
-              }}>
-                {strikeLines.includes(i) ? '\u2717' : (i === phase ? '>' : '')}
-              </span>
               <span style={{
                 color: strikeLines.includes(i) ? '#6B5B55' : colors.muted,
                 textDecoration: strikeLines.includes(i) ? 'line-through' : 'none',
@@ -572,23 +633,31 @@
                   <span style={{ opacity: showCursor ? 1 : 0, color: colors.muted }}>{'\u2589'}</span>
                 )}
               </span>
+              <span style={{
+                color: '#8B6B61',
+                fontSize: '11px',
+                width: '12px'
+              }}>
+                {strikeLines.includes(i) ? '\u2717' : (i === phase ? '<' : '')}
+              </span>
             </div>
           ))}
-          
+
           {phase >= lines.length && (
             <div style={{
               marginTop: '16px',
               paddingTop: '12px',
               borderTop: `1px solid ${colors.border}`,
               display: 'flex',
+              justifyContent: 'flex-end',
               alignItems: 'center',
               gap: '10px'
             }}>
-              <span style={{ color: colors.success, fontSize: '11px', width: '12px' }}>{'\u2192'}</span>
               <span style={{ color: colors.success }}>
                 {typedText}
                 <span style={{ opacity: showCursor ? 1 : 0 }}>{'\u2589'}</span>
               </span>
+              <span style={{ color: colors.success, fontSize: '11px' }}>{'\u2190'}</span>
             </div>
           )}
         </div>
@@ -596,145 +665,514 @@
     }
 
     function HeroBackground({ scrollY }) {
+      const isMobile = useIsMobile();
+
       return (
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <HeroTerminal scrollY={scrollY} />
+          {!isMobile && <HeroTerminal scrollY={scrollY} />}
+        </div>
+      );
+    }
+
+    function TerminalSlider() {
+      const isMobile = useIsMobile();
+
+      if (!isMobile) return null;
+
+      const items = [
+        { text: 'just pretty pixels', struck: true },
+        { text: 'just fast turnaround', struck: true },
+        { text: 'just safe choices', struck: true },
+        { text: 'the full package + brain', struck: false, highlight: true }
+      ];
+
+      // Double the items for seamless loop
+      const allItems = [...items, ...items, ...items, ...items];
+
+      return (
+        <div style={{
+          marginTop: '64px',
+          overflow: 'hidden',
+          width: '100vw',
+          marginLeft: 'calc(-50vw + 50%)',
+          padding: '12px 0',
+          backgroundColor: 'rgba(0, 0, 0, 0.3)'
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: '24px',
+            animation: 'marquee 25s linear infinite',
+            width: 'max-content'
+          }}>
+            {allItems.map((item, i) => (
+              <React.Fragment key={i}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span style={{
+                    color: item.highlight ? colors.success : '#8B6B61',
+                    fontSize: '12px'
+                  }}>
+                    {item.struck ? '\u2717' : '\u2192'}
+                  </span>
+                  <span style={{
+                    color: item.highlight ? colors.success : colors.muted,
+                    textDecoration: item.struck ? 'line-through' : 'none',
+                    textDecorationColor: '#8B6B61',
+                    opacity: item.struck ? 0.6 : 1
+                  }}>
+                    {item.text}
+                  </span>
+                </div>
+                <span style={{ color: colors.border, fontSize: '14px' }}>{'\u2014'}</span>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       );
     }
 
     function SassyPrompt() {
       const [input, setInput] = useState('');
-      const [response, setResponse] = useState('');
+      const [history, setHistory] = useState([]);
+      const [currentResponse, setCurrentResponse] = useState('');
       const [isTyping, setIsTyping] = useState(false);
+      const [showCursor, setShowCursor] = useState(true);
+      const [placeholderText, setPlaceholderText] = useState('');
+      const [placeholderReady, setPlaceholderReady] = useState(false);
+      const [isFocused, setIsFocused] = useState(false);
+      const [ref, inView] = useInView(0.3);
+      const inputRef = useRef(null);
+      const historyRef = useRef(null);
+
+      const fullPlaceholder = 'ask me anything';
+
+      useEffect(() => {
+        const interval = setInterval(() => setShowCursor(v => !v), 530);
+        return () => clearInterval(interval);
+      }, []);
+
+      // Type placeholder when in view
+      useEffect(() => {
+        if (!inView) return;
+
+        // Small delay before typing starts
+        const startTimer = setTimeout(() => {
+          let charIndex = 0;
+          const typeInterval = setInterval(() => {
+            if (charIndex <= fullPlaceholder.length) {
+              setPlaceholderText(fullPlaceholder.slice(0, charIndex));
+              charIndex++;
+            } else {
+              clearInterval(typeInterval);
+              setPlaceholderReady(true);
+            }
+          }, 50);
+        }, 500);
+
+        return () => clearTimeout(startTimer);
+      }, [inView]);
       
       const responses = [
-        { keywords: ['price', 'cost', 'much', 'rate', 'pricing', 'rates', 'kosten', 'preis'], response: "floor is 10k. for a reason." },
-        { keywords: ['cheap', 'cheaper', 'billig', 'guenstig', 'less'], response: "try fiverr." },
-        { keywords: ['discount', 'deal', 'rabatt', 'offer'], response: "no." },
-        { keywords: ['budget', 'afford'], response: "if you have to ask..." },
-        { keywords: ['expensive', 'teuer', 'pricey'], response: "you get what you pay for." },
-        { keywords: ['fast', 'schnell', 'speed', 'rapid'], response: "fast, cheap, good. pick two." },
-        { keywords: ['urgent', 'dringend', 'emergency', 'rush'], response: "urgency costs extra." },
-        { keywords: ['deadline', 'when', 'wann', 'long', 'time', 'duration'], response: "depends. yesterday? no." },
-        { keywords: ['quick', 'asap', 'soon', 'sofort'], response: "quality takes time. deal with it." },
-        { keywords: ['portfolio', 'work', 'examples', 'projects', 'arbeiten', 'beispiel'], response: "scroll up." },
-        { keywords: ['experience', 'erfahrung', 'years', 'jahre', 'senior'], response: "since 2017. still learning." },
-        { keywords: ['style', 'stil', 'aesthetic', 'look'], response: "clean. strategic. no fluff." },
-        { keywords: ['available', 'free', 'verfuegbar', 'frei', 'capacity', 'slot'], response: "maybe. impress me." },
-        { keywords: ['hire', 'book', 'buchen', 'engage', 'work with'], response: "convince me why." },
-        { keywords: ['busy', 'beschaeftigt'], response: "always. but priorities shift." },
-        { keywords: ['who', 'wer', 'name', 'about', 'yourself'], response: "anna. it's on the page." },
-        { keywords: ['why', 'warum', 'reason'], response: "why not?" },
-        { keywords: ['how', 'wie', 'process', 'prozess'], response: "with coffee and deadlines." },
-        { keywords: ['what', 'was', 'services', 'offer', 'angebot'], response: "design. strategy. no bs." },
-        { keywords: ['good', 'gut', 'best', 'beste', 'talented', 'skill'], response: "yes." },
-        { keywords: ['bad', 'schlecht', 'suck'], response: "try me." },
-        { keywords: ['hello', 'hi', 'hey', 'hallo', 'hoi', 'grueezi'], response: "hi. got a real question?" },
-        { keywords: ['thanks', 'danke', 'thank'], response: "you're welcome. now hire me." },
-        { keywords: ['bye', 'tschuess', 'ciao'], response: "email me if you're serious." },
-        { keywords: ['figma', 'adobe', 'sketch', 'tool', 'software'], response: "yes. all of them." },
-        { keywords: ['webflow', 'framer', 'wordpress', 'code', 'dev'], response: "if it builds websites, I've used it." },
-        { keywords: ['logo', 'brand', 'identity', 'branding'], response: "my favorite. let's talk." },
-        { keywords: ['design', 'designer', 'gestaltung', 'grafik', 'graphic'], response: "that's the job. what's the project?" },
-        { keywords: ['web', 'website', 'site', 'page', 'seite'], response: "webdesign? obviously. what else?" },
-        { keywords: ['ui', 'ux', 'interface', 'app'], response: "ui/ux. product. the whole thing." },
-        { keywords: ['crypto', 'blockchain', 'web3', 'nft', 'defi'], response: "my turf. finally someone interesting." },
-        { keywords: ['fintech', 'finance', 'bank', 'trading'], response: "fintech is home. what do you need?" },
-        { keywords: ['help', 'hilfe'], response: "that's literally my job." },
-        { keywords: ['please', 'bitte'], response: "manners. nice. still 10k though." },
-        { keywords: ['can you', 'kannst', 'could'], response: "probably. should I? depends." },
-        { keywords: ['meeting', 'call', 'zoom', 'meet'], response: "max 1 per week. I have things to do." },
-        { keywords: ['revision', 'change', 'aenderung', 'feedback'], response: "2 included. then we talk." },
+        // Pricing
+        { keywords: ['price', 'cost', 'much', 'rate', 'pricing', 'rates', 'kosten', 'preis', 'chf', 'euro', 'dollar', 'pay', 'charge', 'fee', 'invest'], response: "floor is 10k. for a reason." },
+        { keywords: ['cheap', 'cheaper', 'billig', 'guenstig', 'günstig', 'gunsti', 'cheape', 'low cost', 'lower', 'weniger'], response: "try fiverr." },
+        { keywords: ['discount', 'deal', 'rabatt', 'offer', 'negotiate', 'verhandel'], response: "no." },
+        { keywords: ['budget', 'afford', 'leisten', 'teuer', 'expensive', 'pricey'], response: "you get what you pay for." },
+        // Time
+        { keywords: ['fast', 'schnell', 'speed', 'rapid', 'quick', 'asap', 'soon', 'sofort', 'eilig', 'tomorrow', 'morgen'], response: "fast, cheap, good. pick two." },
+        { keywords: ['urgent', 'dringend', 'emergency', 'rush', 'eilt', 'asap'], response: "urgency costs extra." },
+        { keywords: ['deadline', 'when', 'wann', 'long', 'duration', 'timeline', 'deliver', 'liefern', 'fertig'], response: "depends on scope. email me." },
+        { keywords: ['wait', 'warten', 'geduld', 'patience'], response: "good things take time." },
+        // Work & Portfolio
+        { keywords: ['portfolio', 'examples', 'projects', 'arbeiten', 'beispiel', 'show', 'zeig', 'seen', 'gesehen'], response: "scroll up." },
+        { keywords: ['experience', 'erfahrung', 'years', 'jahre', 'senior', 'junior', 'lang'], response: "since 2017. still learning." },
+        { keywords: ['style', 'stil', 'aesthetic', 'look', 'aussehen', 'vibe'], response: "clean. strategic. no fluff." },
+        { keywords: ['moonberg'], response: "my main gig. check it out." },
+        // Availability
+        { keywords: ['available', 'verfuegbar', 'verfügbar', 'frei', 'capacity', 'slot', 'zeit', 'termin', 'open'], response: "maybe. impress me." },
+        { keywords: ['hire', 'book', 'buchen', 'engage', 'work with', 'zusammen', 'projekt'], response: "convince me why." },
+        { keywords: ['busy', 'beschaeftigt', 'beschäftigt', 'occupied'], response: "always. but priorities shift." },
+        // About
+        { keywords: ['who', 'wer', 'name', 'yourself', 'du', 'you', 'person'], response: "anna. designer. it's on the page." },
+        { keywords: ['where', 'wo', 'location', 'based', 'standort', 'city', 'stadt'], response: "zürich. but remote works." },
+        { keywords: ['why', 'warum', 'reason', 'grund'], response: "because I'm good at it." },
+        { keywords: ['how', 'wie', 'process', 'prozess', 'workflow', 'ablauf'], response: "brief > concept > design > iterate > done." },
+        // Services
+        { keywords: ['what', 'services', 'angebot', 'machen', 'bieten', 'do you'], response: "branding. web. product. strategy." },
+        { keywords: ['logo', 'brand', 'identity', 'branding', 'marke', 'ci', 'corporate'], response: "my favorite. let's talk." },
+        { keywords: ['web', 'website', 'site', 'page', 'seite', 'homepage'], response: "webdesign? obviously." },
+        { keywords: ['ui', 'ux', 'interface', 'app', 'product', 'produkt'], response: "ui/ux. product. the whole thing." },
+        { keywords: ['figma', 'adobe', 'sketch', 'tool', 'software', 'photoshop', 'illustrator'], response: "yes. all of them." },
+        { keywords: ['webflow', 'framer', 'wordpress', 'code', 'dev', 'react', 'html'], response: "if it builds websites, I've touched it." },
+        // Industries
+        { keywords: ['crypto', 'blockchain', 'web3', 'nft', 'defi', 'bitcoin', 'eth'], response: "my turf. finally someone interesting." },
+        { keywords: ['fintech', 'finance', 'bank', 'trading', 'startup', 'saas', 'b2b'], response: "fintech is home. what's the project?" },
+        { keywords: ['tech', 'software', 'digital'], response: "tech clients are my people." },
+        // Communication
+        { keywords: ['meeting', 'call', 'zoom', 'meet', 'google meet', 'teams', 'video'], response: "max 1 per week. I prefer async." },
+        { keywords: ['email', 'mail', 'kontakt', 'contact', 'reach', 'schreib'], response: "hello@sugarandspice.ch" },
+        { keywords: ['revision', 'change', 'aenderung', 'änderung', 'feedback', 'korrektur', 'runde'], response: "2 included. then we talk." },
+        // Greetings & Politeness
+        { keywords: ['hello', 'hi', 'hey', 'hallo', 'hoi', 'grueezi', 'grüezi', 'moin', 'servus', 'yo'], response: "hi. got a real question?" },
+        { keywords: ['thanks', 'danke', 'thank', 'thx', 'merci'], response: "you're welcome. now hire me." },
+        { keywords: ['please', 'bitte', 'pls'], response: "manners. nice. still 10k though." },
+        { keywords: ['sorry', 'entschuldigung', 'sry'], response: "no worries. what do you need?" },
+        { keywords: ['bye', 'tschuess', 'tschüss', 'ciao', 'goodbye', 'later'], response: "email me if you're serious." },
+        // Compliments & Criticism
+        { keywords: ['good', 'gut', 'great', 'awesome', 'nice', 'cool', 'toll', 'super', 'amazing', 'love', 'liebe', 'beautiful', 'schön'], response: "I know. thanks though." },
+        { keywords: ['bad', 'schlecht', 'suck', 'hate', 'hass', 'ugly', 'hässlich', 'boring', 'langweilig'], response: "strong opinion. noted." },
+        { keywords: ['best', 'beste', 'talented', 'skill', 'können', 'fähig', 'expert'], response: "I try. results speak." },
+        // Misc
+        { keywords: ['help', 'hilfe', 'support'], response: "that's literally my job." },
+        { keywords: ['can you', 'kannst', 'could', 'would', 'könntest', 'würdest'], response: "probably. depends on the project." },
+        { keywords: ['coffee', 'kaffee', 'cafe', 'café'], response: "always. best fuel." },
+        { keywords: ['ai', 'chatgpt', 'künstlich', 'artificial', 'robot', 'bot'], response: "I'm real. this chat isn't." },
+        { keywords: ['fun', 'spass', 'spaß', 'hobby', 'free time', 'freizeit'], response: "what's that?" },
+        { keywords: ['married', 'single', 'boyfriend', 'girlfriend', 'date', 'freund'], response: "not relevant. next." },
+        { keywords: ['age', 'alter', 'old', 'jung', 'young', 'geboren', 'born'], response: "old enough to know better." },
       ];
-      
-      const defaultResponses = [
-        "google it.",
-        "not my department.",
-        "try again.",
-        "that's above my pay grade.",
-        "read the page.",
-        "email me. maybe.",
-        "mhm. next.",
-        "I'll answer that after you sign.",
-        "cute question.",
-        "that requires coffee first.",
-        "ask your last designer. oh wait.",
-        "classified.",
+
+      const questionDefaults = [
+        "good question. email me.",
+        "depends. tell me more via email.",
+        "that's a conversation. hello@sugarandspice.ch",
+        "can't answer that here. reach out.",
+        "complex. let's discuss properly.",
       ];
-      
+
+      const statementDefaults = [
+        "noted.",
+        "interesting.",
+        "okay.",
+        "cool story.",
+        "if you say so.",
+        "sure.",
+        "mhm.",
+      ];
+
       const getResponse = (text) => {
-        const lower = text.toLowerCase();
-        
+        const lower = text.toLowerCase().replace(/[äöü]/g, match => ({ä:'ae',ö:'oe',ü:'ue'}[match]));
+
         for (const item of responses) {
           if (item.keywords.some(kw => lower.includes(kw))) {
             return item.response;
           }
         }
-        
-        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+
+        // Category detection
+        const isQuestion = text.trim().endsWith('?');
+        const defaults = isQuestion ? questionDefaults : statementDefaults;
+        return defaults[Math.floor(Math.random() * defaults.length)];
       };
       
       const handleSubmit = (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
-        
+        if (!input.trim() || isTyping) return;
+
+        const question = input.trim();
+        const answer = getResponse(question);
+
         setIsTyping(true);
-        setResponse('');
-        
-        const answer = getResponse(input);
+        setCurrentResponse('');
+        setInput('');
+
         let i = 0;
-        
         const typeChar = () => {
           if (i < answer.length) {
-            setResponse(answer.slice(0, i + 1));
+            setCurrentResponse(answer.slice(0, i + 1));
             i++;
             setTimeout(typeChar, 30);
           } else {
             setIsTyping(false);
+            setHistory(prev => [...prev.slice(-2), { q: question, a: answer }]);
+            setCurrentResponse('');
+            setTimeout(() => {
+              if (historyRef.current) {
+                historyRef.current.scrollTop = historyRef.current.scrollHeight;
+              }
+            }, 50);
           }
         };
-        
+
         setTimeout(typeChar, 300);
-        setInput('');
       };
       
       return (
-        <div style={{ marginTop: '24px', borderTop: `1px solid ${colors.border}`, paddingTop: '20px', pointerEvents: 'auto' }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: colors.success }}>{'>'}</span>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
-              placeholder="ask me anything"
+        <div ref={ref} style={{ marginTop: '24px', borderTop: `1px solid ${colors.border}`, paddingTop: '20px', pointerEvents: 'auto' }}>
+          {/* History */}
+          {(history.length > 0 || currentResponse) && (
+            <div
+              ref={historyRef}
               style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: colors.primary,
-                fontFamily: 'inherit',
-                fontSize: '12px',
-                width: '100%',
-                caretColor: colors.success
+                marginBottom: '12px',
+                maxHeight: '150px',
+                overflowY: 'auto',
+                fontSize: '14px'
               }}
-            />
-          </form>
-          {response && (
-            <div style={{ 
-              marginTop: '12px', 
-              color: colors.success,
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px'
-            }}>
-              <span style={{ color: colors.muted }}>{'<'}</span>
-              <span>{response}{isTyping && '\u2589'}</span>
+            >
+              {history.map((item, i) => (
+                <div key={i} style={{ marginBottom: '8px', opacity: i < history.length - 1 ? 0.5 : 1 }}>
+                  <div style={{ display: 'flex', gap: '8px', color: colors.muted }}>
+                    <span style={{ color: colors.success }}>{'>'}</span>
+                    <span>{item.q}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', color: colors.success, marginTop: '4px' }}>
+                    <span style={{ color: colors.muted }}>{'<'}</span>
+                    <span>{item.a}</span>
+                  </div>
+                </div>
+              ))}
+              {currentResponse && (
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', color: colors.success, marginTop: '4px' }}>
+                    <span style={{ color: colors.muted }}>{'<'}</span>
+                    <span>{currentResponse}{isTyping && '\u2589'}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
+          <form
+            onSubmit={handleSubmit}
+            onClick={() => inputRef.current?.focus()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              minWidth: 0
+            }}
+          >
+            <span style={{
+              color: colors.success,
+              opacity: inView ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              fontSize: '16px',
+              fontWeight: 500,
+              flexShrink: 0
+            }}>{'>'}</span>
+            <div
+              data-cursor="text"
+              style={{
+                position: 'relative',
+                flex: 1,
+                minWidth: 0,
+                background: 'rgba(0, 0, 0, 0.3)',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder={placeholderReady ? fullPlaceholder : ''}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: colors.primary,
+                  fontFamily: 'inherit',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  flex: 1,
+                  minWidth: 0,
+                  width: '100%',
+                  caretColor: colors.success,
+                  cursor: 'text',
+                  WebkitAppearance: 'none',
+                  borderRadius: 0,
+                  minHeight: '24px'
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  background: colors.success,
+                  border: 'none',
+                  borderRadius: '3px',
+                  padding: '4px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: colors.bg,
+                  fontSize: '12px',
+                  fontFamily: 'inherit',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'background 0.3s ease',
+                  flexShrink: 0
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = colors.highlight}
+                onMouseLeave={(e) => e.currentTarget.style.background = colors.success}
+              >
+                {'\u21B5'}
+              </button>
+              {/* Typing placeholder overlay */}
+              {inView && !placeholderReady && !input && !isFocused && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '12px',
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  color: colors.primary,
+                  pointerEvents: 'none'
+                }}>
+                  {placeholderText}
+                  <span style={{ opacity: showCursor ? 1 : 0, color: colors.success }}>{'\u2589'}</span>
+                </div>
+              )}
+              {/* Blinking cursor when focused and empty */}
+              {isFocused && !input && placeholderReady && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '12px',
+                  fontSize: '16px',
+                  color: colors.success,
+                  pointerEvents: 'none'
+                }}>
+                  <span style={{ opacity: showCursor ? 1 : 0 }}>{'\u2589'}</span>
+                </div>
+              )}
+            </div>
+          </form>
         </div>
+      );
+    }
+
+    function MobileNav() {
+      const [isOpen, setIsOpen] = useState(false);
+      const isMobile = useIsMobile();
+
+      if (!isMobile) return null;
+
+      const navItems = [
+        { label: 'Approach', id: 'approach' },
+        { label: 'Work', id: 'work' },
+        { label: 'About', id: 'about' },
+        { label: 'Contact', id: 'contact' }
+      ];
+
+      const handleClick = (id) => {
+        setIsOpen(false);
+        setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+      };
+
+      return (
+        <>
+          {/* Burger Button */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '5px',
+              cursor: 'pointer',
+              zIndex: 102
+            }}
+          >
+            <span style={{
+              display: 'block',
+              width: '20px',
+              height: '2px',
+              backgroundColor: colors.primary,
+              transition: 'all 0.3s ease',
+              transform: isOpen ? 'rotate(45deg) translateY(7px)' : 'none'
+            }}/>
+            <span style={{
+              display: 'block',
+              width: '20px',
+              height: '2px',
+              backgroundColor: colors.primary,
+              transition: 'all 0.3s ease',
+              opacity: isOpen ? 0 : 1
+            }}/>
+            <span style={{
+              display: 'block',
+              width: '20px',
+              height: '2px',
+              backgroundColor: colors.primary,
+              transition: 'all 0.3s ease',
+              transform: isOpen ? 'rotate(-45deg) translateY(-7px)' : 'none'
+            }}/>
+          </button>
+
+          {/* Overlay */}
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: colors.bg,
+            zIndex: 101,
+            opacity: isOpen ? 1 : 0,
+            pointerEvents: isOpen ? 'auto' : 'none',
+            transition: 'opacity 0.4s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '32px'
+          }}>
+            {navItems.map((item, i) => (
+              <button
+                key={item.id}
+                onClick={() => handleClick(item.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: colors.primary,
+                  fontFamily: '"Bodoni Moda", Georgia, serif',
+                  fontSize: '36px',
+                  cursor: 'pointer',
+                  opacity: isOpen ? 1 : 0,
+                  transform: isOpen ? 'translateY(0)' : 'translateY(20px)',
+                  transition: `all 0.4s ease ${i * 0.1}s`
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+
+            <a
+              href="mailto:hello@sugarandspice.ch"
+              style={{
+                marginTop: '24px',
+                color: colors.success,
+                fontSize: '14px',
+                textDecoration: 'none',
+                opacity: isOpen ? 1 : 0,
+                transition: 'opacity 0.4s ease 0.4s'
+              }}
+            >
+              hello@sugarandspice.ch
+            </a>
+          </div>
+        </>
       );
     }
 
@@ -785,29 +1223,20 @@
           color: colors.primary,
           minHeight: '100vh',
           fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-          fontSize: '14px'
+          fontSize: '14px',
+          overflowX: 'hidden',
+          maxWidth: '100vw'
         }}>
           
           <CustomCursor />
-          
-          {/* Grain */}
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            opacity: 0.04,
-            pointerEvents: 'none',
-            zIndex: 1000,
-            mixBlendMode: 'overlay'
-          }}/>
           
           {/* Scanlines */}
           <div style={{
             position: 'fixed',
             inset: 0,
-            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)',
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.0075) 2px, rgba(255,255,255,0.0075) 4px)',
             pointerEvents: 'none',
-            zIndex: 999
+            zIndex: 0
           }}/>
           
           {/* Progress bar */}
@@ -863,10 +1292,12 @@
               </span>
             </div>
             
-            {!isMobile && (
-              <div style={{ color: colors.muted, fontSize: '11px', letterSpacing: '0.08em' }}>
+            {isMobile ? (
+              <MobileNav />
+            ) : (
+              <span style={{ color: colors.muted, fontSize: '12px' }}>
                 <TerminalTime />
-              </div>
+              </span>
             )}
           </header>
 
@@ -918,8 +1349,8 @@
               overflow: 'hidden'
             }}>
               <HeroBackground scrollY={scrollY} />
-              
-              <div style={{ position: 'relative', maxWidth: '1100px' }}>
+
+              <div style={{ position: 'relative', width: '100%' }}>
                 {/* Terminal */}
                 <div style={{
                   marginBottom: isMobile ? '32px' : '48px',
@@ -936,14 +1367,15 @@
                     <span style={{ color: colors.success }}>{'\u2192'}</span> <ScrambleText trigger={loaded}>./run --selective</ScrambleText>
                   </div>
                 </div>
-                
+
                 {/* Headline */}
                 <h1 style={{
                   ...headlineStyle,
-                  fontSize: isMobile ? 'clamp(48px, 12vw, 72px)' : 'clamp(72px, 14vw, 160px)',
+                  fontSize: isMobile ? 'clamp(72px, 18vw, 120px)' : 'clamp(72px, 14vw, 160px)',
                   lineHeight: 0.85,
                   letterSpacing: '-0.04em',
-                  marginBottom: isMobile ? '32px' : '56px'
+                  marginBottom: isMobile ? '32px' : '56px',
+                  maxWidth: '900px'
                 }}>
                   <span style={{
                     display: 'block',
@@ -963,47 +1395,71 @@
                     <GlitchText>that cut through.</GlitchText>
                   </span>
                 </h1>
-                
-                {/* Subtitle */}
-                <p style={{
-                  fontSize: isMobile ? '14px' : '15px',
-                  color: colors.muted,
-                  maxWidth: '520px',
-                  lineHeight: 1.8,
-                  opacity: loaded ? 1 : 0,
-                  transition: 'opacity 1s ease 1.2s'
-                }}>
-                  <span style={{ color: colors.highlight }}>Anna.</span> Design for tech, crypto, fintech.
-                  <br/>One person. The whole thing. No middlemen.
-                </p>
-                
-                {/* Stats */}
+
+                {/* Subtitle + Stats */}
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: isMobile ? '32px' : '64px',
-                  marginTop: isMobile ? '48px' : '64px',
-                  fontSize: '12px',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                  gap: isMobile ? '32px' : '48px',
                   opacity: loaded ? 1 : 0,
-                  transition: 'opacity 1s ease 1.4s'
+                  transition: 'opacity 1s ease 1.2s'
                 }}>
-                  {[
-                    { label: 'base', value: 'Z\u00fcrich', color: colors.accent },
-                    { label: 'capacity', value: '\u25CF selective', color: colors.success },
-                    { label: 'since', value: '2017', color: colors.primary }
-                  ].map((stat, i) => (
-                    <Magnetic key={i} strength={0.2}>
-                      <div data-hover="true" style={{ padding: '8px' }}>
-                        <div style={{ color: colors.muted, marginBottom: '6px', fontSize: '10px', letterSpacing: '0.12em' }}>
-                          {stat.label}
-                        </div>
-                        <div style={{ color: stat.color, fontWeight: 500 }}>{stat.value}</div>
+                  <div style={{ maxWidth: '520px' }}>
+                    <div style={{
+                      fontSize: isMobile ? '14px' : '15px',
+                      color: colors.primary,
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{ color: colors.success }}>Anna.</span> Design for tech, crypto, fintech.
+                    </div>
+                    <div style={{
+                      fontSize: isMobile ? '14px' : '15px',
+                      color: colors.primary
+                    }}>
+                      One person. The whole thing. No middlemen.
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    gap: isMobile ? '32px' : '48px'
+                  }}>
+                    <div>
+                      <div style={{ color: colors.primary, marginBottom: '8px', fontSize: '10px', letterSpacing: '0.12em' }}>
+                        base
                       </div>
-                    </Magnetic>
-                  ))}
+                      <div style={{ color: colors.primary, fontWeight: 500, fontSize: isMobile ? '14px' : '15px' }}>Zürich</div>
+                    </div>
+                    <div>
+                      <div style={{ color: colors.primary, marginBottom: '8px', fontSize: '10px', letterSpacing: '0.12em' }}>
+                        capacity
+                      </div>
+                      <div style={{ color: colors.success, fontWeight: 500, fontSize: isMobile ? '14px' : '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: colors.success,
+                          animation: 'pulse 2s ease infinite'
+                        }}/>
+                        selective
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: colors.primary, marginBottom: '8px', fontSize: '10px', letterSpacing: '0.12em' }}>
+                        since
+                      </div>
+                      <div style={{ color: colors.primary, fontWeight: 500, fontSize: isMobile ? '14px' : '15px' }}>2017</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
+
+              {/* Terminal Slider */}
+              <TerminalSlider />
+
               {/* Scroll indicator */}
               {!isMobile && (
                 <div style={{
@@ -1039,10 +1495,7 @@
             </section>
 
             {/* MANIFESTO */}
-            <section style={{
-              minHeight: isMobile ? 'auto' : '100vh',
-              display: 'flex',
-              alignItems: 'center',
+            <section id="approach" style={{
               padding: verticalPadding,
               borderTop: `1px solid ${colors.border}`
             }}>
@@ -1059,9 +1512,9 @@
                   fontSize: '11px',
                   color: colors.muted,
                   letterSpacing: '0.2em',
-                  paddingTop: isMobile ? '0' : '20px',
                   position: isMobile ? 'relative' : 'sticky',
-                  top: isMobile ? '0' : '160px'
+                  top: isMobile ? '0' : '100px',
+                  alignSelf: 'start'
                 }}>
                   <span style={{ opacity: 0.3 }}>01</span>
                   <br/>
@@ -1115,7 +1568,7 @@
             </section>
 
             {/* WORK */}
-            <section style={{
+            <section id="work" style={{
               padding: verticalPadding,
               borderTop: `1px solid ${colors.border}`,
               borderBottom: `1px solid ${colors.border}`
@@ -1132,9 +1585,9 @@
                   fontSize: '11px',
                   color: colors.muted,
                   letterSpacing: '0.2em',
-                  paddingTop: isMobile ? '0' : '20px',
                   position: isMobile ? 'relative' : 'sticky',
-                  top: isMobile ? '0' : '160px'
+                  top: isMobile ? '0' : '100px',
+                  alignSelf: 'start'
                 }}>
                   <span style={{ opacity: 0.3 }}>02</span>
                   <br/>
@@ -1148,7 +1601,6 @@
                   {projects.map((project, i) => (
                     <div key={project.id}>
                       <Reveal delay={i * 120}>
-                        <Magnetic strength={0.1}>
                           <div
                             data-hover="true"
                             onMouseEnter={() => setHoverProject(project.id)}
@@ -1181,11 +1633,11 @@
                                 fontSize: isMobile ? 'clamp(28px, 8vw, 40px)' : 'clamp(36px, 6vw, 64px)',
                                 letterSpacing: '-0.02em',
                                 color: hoverProject === project.id ? colors.highlight : colors.primary,
-                                transition: 'color 0.4s ease'
+                                transform: hoverProject === project.id ? 'scale(1.02)' : 'scale(1)',
+                                transformOrigin: 'left center',
+                                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                               }}>
-                                {hoverProject === project.id ? (
-                                  <GlitchText intensity="high">{project.name}</GlitchText>
-                                ) : project.name}
+                                {project.name}
                               </h3>
                               {!isMobile && (
                                 <span style={{
@@ -1201,13 +1653,34 @@
                             </div>
                             
                             {isMobile ? (
-                              <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: colors.muted, flexWrap: 'wrap' }}>
+                              <div style={{
+                                display: 'flex',
+                                gap: '16px',
+                                fontSize: '12px',
+                                color: colors.muted,
+                                flexWrap: 'wrap',
+                                alignItems: 'center'
+                              }}>
                                 <span>{project.type}</span>
+                                <span style={{ opacity: 0.5 }}>{'\u00B7'}</span>
                                 <span>{project.year}</span>
+                                <span style={{ opacity: 0.5 }}>{'\u00B7'}</span>
                                 <span style={{
-                                  color: project.status === 'ongoing' ? colors.success : 
-                                         project.status === 'live' ? colors.highlight : colors.muted
+                                  color: project.status === 'ongoing' ? colors.success :
+                                         project.status === 'live' ? colors.highlight : colors.muted,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
                                 }}>
+                                  {project.status === 'ongoing' && (
+                                    <span style={{
+                                      width: '6px',
+                                      height: '6px',
+                                      borderRadius: '50%',
+                                      backgroundColor: colors.success,
+                                      animation: 'pulse 2s ease infinite'
+                                    }}/>
+                                  )}
                                   {project.status}
                                 </span>
                               </div>
@@ -1247,7 +1720,6 @@
                               </>
                             )}
                           </div>
-                        </Magnetic>
                       </Reveal>
                       <AnimatedLine delay={i * 120 + 60} />
                     </div>
@@ -1257,25 +1729,27 @@
             </section>
 
             {/* ABOUT */}
-            <section style={{
+            <section id="about" style={{
               padding: verticalPadding,
-              position: 'relative'
+              position: 'relative',
+              overflow: 'hidden'
             }}>
               <div style={{
-                maxWidth: '1400px',
+                maxWidth: '100%',
+                width: '100%',
                 margin: '0 auto',
                 padding: `0 ${sectionPadding}`,
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : '160px 1fr 1fr',
-                gap: isMobile ? '40px' : '100px'
+                gap: isMobile ? '40px' : '100px',
+                alignItems: 'stretch',
+                overflow: 'hidden'
               }}>
                 <div style={{
                   fontSize: '11px',
                   color: colors.muted,
                   letterSpacing: '0.2em',
-                  paddingTop: isMobile ? '0' : '20px',
-                  position: isMobile ? 'relative' : 'sticky',
-                  top: isMobile ? '0' : '160px'
+                  alignSelf: 'start'
                 }}>
                   <span style={{ opacity: 0.3 }}>03</span>
                   <br/>
@@ -1283,33 +1757,43 @@
                     <GlitchText>ABOUT</GlitchText>
                   </span>
                 </div>
-                
-                <div>
-                  <Reveal delay={100}>
-                    <h3 style={{
-                      ...headlineStyle,
-                      fontSize: isMobile ? '36px' : '48px',
-                      marginBottom: '36px'
-                    }}>
-                      <GlitchText>Anna</GlitchText>
-                    </h3>
-                  </Reveal>
-                  <Reveal delay={200}>
-                    <p style={{ fontSize: isMobile ? '14px' : '15px', lineHeight: 2, color: colors.muted }}>
-                      Swiss design education. Top of class.
-                      Self-taught web since 2017. 
-                      Currently Head of Design at Moonberg.
-                    </p>
-                  </Reveal>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  alignSelf: 'start'
+                }}>
+                  <div>
+                    <Reveal delay={100}>
+                      <h3 style={{
+                        ...headlineStyle,
+                        fontSize: isMobile ? '36px' : '48px',
+                        marginBottom: '36px'
+                      }}>
+                        <GlitchText>Anna</GlitchText>
+                      </h3>
+                    </Reveal>
+                    <Reveal delay={200}>
+                      <p style={{ fontSize: isMobile ? '14px' : '15px', lineHeight: 2, color: colors.muted, width: '100%', wordBreak: 'break-word' }}>
+                        Swiss design education. Top of class.
+                        Self-taught web since 2017.
+                        Currently Head of Design at Moonberg.
+                      </p>
+                    </Reveal>
+                  </div>
+
                 </div>
-                
-                <div style={{ paddingTop: isMobile ? '0' : '48px' }}>
+
+                <div style={{ paddingTop: isMobile ? '0' : '48px', minWidth: 0, overflow: 'hidden' }}>
                   <Reveal delay={150} direction="left">
                     <div style={{
                       backgroundColor: colors.elevated,
                       border: `1px solid ${colors.border}`,
                       borderRadius: '6px',
                       padding: isMobile ? '24px' : '36px',
+                      maxWidth: '100%',
                       fontSize: '12px',
                       position: 'relative',
                       overflow: 'hidden'
@@ -1361,7 +1845,7 @@
             </section>
 
             {/* CONTACT */}
-            <section style={{
+            <section id="contact" style={{
               minHeight: isMobile ? 'auto' : '100vh',
               display: 'flex',
               alignItems: 'center',
@@ -1418,9 +1902,9 @@
                 <Reveal delay={150}>
                   <h2 style={{
                     ...headlineStyle,
-                    fontSize: isMobile ? 'clamp(36px, 10vw, 52px)' : 'clamp(52px, 12vw, 130px)',
-                    lineHeight: 0.9,
-                    letterSpacing: '-0.03em',
+                    fontSize: isMobile ? 'clamp(32px, 8vw, 48px)' : 'clamp(44px, 7vw, 80px)',
+                    lineHeight: 1.1,
+                    letterSpacing: '-0.02em',
                     marginBottom: isMobile ? '48px' : '72px'
                   }}>
                     Not window shopping?
@@ -1439,22 +1923,25 @@
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '16px',
-                        fontSize: isMobile ? '14px' : '15px',
-                        color: colors.muted,
+                        gap: '10px',
+                        fontSize: isMobile ? '12px' : '13px',
+                        color: colors.bg,
+                        backgroundColor: colors.success,
                         textDecoration: 'none',
-                        padding: '16px 0',
+                        padding: '10px 16px',
+                        borderRadius: '4px',
                         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.color = colors.highlight;
+                        e.currentTarget.style.backgroundColor = colors.highlight;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.color = colors.muted;
+                        e.currentTarget.style.backgroundColor = colors.success;
                       }}
                     >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'block' }}><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                       <ScrambleText trigger={true}>hello@sugarandspice.ch</ScrambleText>
-                      <span style={{ fontSize: '18px' }}>{'\u2192'}</span>
+                      <span style={{ fontSize: '14px' }}>{'\u2192'}</span>
                     </a>
                   </Magnetic>
                 </Reveal>

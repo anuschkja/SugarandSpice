@@ -1,0 +1,12 @@
+# Claude Context (lokal)
+CLAUDE.md
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
