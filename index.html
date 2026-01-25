@@ -132,6 +132,8 @@
     function useShakeDetection(callback, threshold = 25) {
       const lastShakeRef = useRef(0);
       const shakeCountRef = useRef(0);
+      const permissionGrantedRef = useRef(false);
+      const listenerAddedRef = useRef(false);
 
       useEffect(() => {
         let lastX = 0, lastY = 0, lastZ = 0;
@@ -168,8 +170,54 @@
           lastX = x; lastY = y; lastZ = z;
         };
 
-        window.addEventListener('devicemotion', handleMotion);
-        return () => window.removeEventListener('devicemotion', handleMotion);
+        const startListening = () => {
+          if (listenerAddedRef.current) return;
+          listenerAddedRef.current = true;
+          window.addEventListener('devicemotion', handleMotion);
+        };
+
+        // iOS 13+ requires permission request from user gesture
+        const requestPermission = async () => {
+          if (permissionGrantedRef.current) return;
+
+          if (typeof DeviceMotionEvent !== 'undefined' &&
+              typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+              const permission = await DeviceMotionEvent.requestPermission();
+              if (permission === 'granted') {
+                permissionGrantedRef.current = true;
+                startListening();
+              }
+            } catch (e) {
+              console.log('Motion permission denied');
+            }
+          } else {
+            // Non-iOS or older iOS - no permission needed
+            permissionGrantedRef.current = true;
+            startListening();
+          }
+        };
+
+        // For iOS: request permission on first touch
+        const handleFirstTouch = () => {
+          requestPermission();
+          document.removeEventListener('touchstart', handleFirstTouch);
+        };
+
+        // Check if permission API exists (iOS 13+)
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+          document.addEventListener('touchstart', handleFirstTouch, { once: true });
+        } else {
+          // Android/Desktop - just start listening
+          startListening();
+        }
+
+        return () => {
+          window.removeEventListener('devicemotion', handleMotion);
+          document.removeEventListener('touchstart', handleFirstTouch);
+          listenerAddedRef.current = false;
+        };
       }, [callback, threshold]);
     }
 
