@@ -1635,7 +1635,7 @@
                 transition: 'opacity 0.6s ease 0.5s',
                 cursor: 'pointer'
             }}>
-              <GlitchText>sugar</GlitchText><span style={{ color: colors.success, fontWeight: 600 }}>_</span><GlitchText>spice</GlitchText>{!isMobile && ' \u2014 zsh'}
+              <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary, borderBottom: `2px solid ${colors.success}`, paddingBottom: '2px' }}>spice</span>{!isMobile && ' \u2014 zsh'}
             </span>
 
             {isMobile ? (
@@ -2330,7 +2330,7 @@
               position: 'relative',
               zIndex: 50
             }}>
-              <div>{'\u00A9'} 2024 <GlitchText>sugar</GlitchText><span style={{ color: colors.success, fontWeight: 600 }}>_</span><GlitchText>spice</GlitchText> GmbH</div>
+              <div>{'\u00A9'} 2024 <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary, borderBottom: `2px solid ${colors.success}`, paddingBottom: '1px' }}>spice</span> GmbH</div>
               <div style={{ display: 'flex', gap: isMobile ? '24px' : '48px' }}>
                 {['Imprint', 'Privacy'].map((link) => (
                   <Magnetic key={link} strength={0.3}>
