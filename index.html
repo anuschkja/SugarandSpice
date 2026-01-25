@@ -1571,7 +1571,8 @@
             <section id="work" style={{
               padding: verticalPadding,
               borderTop: `1px solid ${colors.border}`,
-              borderBottom: `1px solid ${colors.border}`
+              borderBottom: `1px solid ${colors.border}`,
+              overflow: 'hidden'
             }}>
               <div style={{
                 maxWidth: '1400px',
@@ -1579,7 +1580,8 @@
                 padding: `0 ${sectionPadding}`,
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : '160px 1fr',
-                gap: isMobile ? '40px' : '100px'
+                gap: isMobile ? '40px' : '80px',
+                overflow: 'hidden'
               }}>
                 <div style={{
                   fontSize: '11px',
@@ -1596,7 +1598,7 @@
                   </span>
                 </div>
                 
-                <div>
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <AnimatedLine />
                   {projects.map((project, i) => (
                     <div key={project.id}>
@@ -1608,10 +1610,11 @@
                             style={{
                               padding: isMobile ? '32px 0' : '56px 0',
                               display: 'grid',
-                              gridTemplateColumns: isMobile ? '1fr' : '1fr 180px 100px 100px',
+                              gridTemplateColumns: isMobile ? '1fr' : '1fr 140px 80px 80px',
                               alignItems: 'center',
-                              gap: isMobile ? '12px' : '32px',
-                              position: 'relative'
+                              gap: isMobile ? '12px' : '24px',
+                              position: 'relative',
+                              minWidth: 0
                             }}
                           >
                             {!isMobile && (
