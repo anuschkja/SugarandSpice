@@ -801,7 +801,7 @@
         { keywords: ['hire', 'book', 'buchen', 'engage', 'work with', 'zusammen', 'projekt'], response: "convince me why." },
         { keywords: ['busy', 'beschaeftigt', 'beschäftigt', 'occupied'], response: "always. but priorities shift." },
         // About
-        { keywords: ['who', 'wer', 'name', 'yourself', 'du', 'you', 'person'], response: "anna. designer. it's on the page." },
+        { keywords: ['who', 'wer', 'name', 'yourself', 'person', 'who are'], response: "anna. designer. it's on the page." },
         { keywords: ['where', 'wo', 'location', 'based', 'standort', 'city', 'stadt'], response: "zürich. but remote works." },
         { keywords: ['why', 'warum', 'reason', 'grund'], response: "because I'm good at it." },
         { keywords: ['how', 'wie', 'process', 'prozess', 'workflow', 'ablauf'], response: "brief > concept > design > iterate > done." },
@@ -837,7 +837,7 @@
         { keywords: ['ai', 'chatgpt', 'künstlich', 'artificial', 'robot', 'bot'], response: "I'm real. this chat isn't." },
         { keywords: ['fun', 'spass', 'spaß', 'hobby', 'free time', 'freizeit'], response: "what's that?" },
         { keywords: ['married', 'single', 'boyfriend', 'girlfriend', 'date', 'freund'], response: "not relevant. next." },
-        { keywords: ['age', 'alter', 'old', 'jung', 'young', 'geboren', 'born'], response: "old enough to know better." },
+        { keywords: ['age', 'alter', 'alt', 'old', 'jung', 'young', 'geboren', 'born'], response: "old enough to know better." },
       ];
 
       const questionDefaults = [
@@ -1345,7 +1345,8 @@
               flexDirection: 'column',
               justifyContent: 'center',
               padding: sectionPadding,
-              paddingTop: isMobile ? '80px' : sectionPadding,
+              paddingTop: isMobile ? '40px' : sectionPadding,
+              paddingBottom: isMobile ? '12.5vh' : 0,
               position: 'relative',
               overflow: 'hidden'
             }}>
