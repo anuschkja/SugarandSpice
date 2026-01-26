@@ -14,7 +14,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="sugar_spice — Design Studio">
   <meta name="twitter:description" content="SugarandSpice GmbH – Design that delivers.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23A67B5B'/%3E%3Crect x='8' y='18' width='16' height='4' rx='1' fill='%230C0C0C'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230C0C0C'/%3E%3Crect x='8' y='18' width='16' height='4' rx='1' fill='%23A67B5B'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -770,16 +770,14 @@
         return () => clearTimeout(timeout);
       }, [phase]);
       
-      if (isMobile) return null;
-      
       return (
         <div style={{
           position: 'absolute',
-          right: '80px',
-          top: 'calc(33.2vh - 80px)',
-          transform: `translateY(${scrollY * -0.05}px)`,
+          right: isMobile ? '20px' : '80px',
+          top: isMobile ? '20px' : 'calc(33.2vh - 80px)',
+          transform: isMobile ? 'none' : `translateY(${scrollY * -0.05}px)`,
           fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '14px',
+          fontSize: isMobile ? '11px' : '14px',
           pointerEvents: 'none',
           userSelect: 'none',
           textAlign: 'right'
@@ -843,7 +841,7 @@
 
       return (
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          {!isMobile && <HeroTerminal scrollY={scrollY} />}
+          <HeroTerminal scrollY={scrollY} />
         </div>
       );
     }
@@ -1374,6 +1372,176 @@
       );
     }
 
+    function PrivacyModal({ show, onClose }) {
+      const isMobile = useIsMobile();
+
+      useEffect(() => {
+        if (show) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+      }, [show]);
+
+      if (!show) return null;
+
+      const sectionStyle = {
+        marginBottom: '32px'
+      };
+
+      const headingStyle = {
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '14px',
+        fontWeight: 600,
+        color: colors.primary,
+        marginBottom: '12px',
+        letterSpacing: '0.05em'
+      };
+
+      const textStyle = {
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '13px',
+        lineHeight: 1.8,
+        color: colors.accent
+      };
+
+      return (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: colors.elevated,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '8px',
+              maxWidth: '720px',
+              width: '100%',
+              maxHeight: '85vh',
+              overflow: 'auto',
+              position: 'relative'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              backgroundColor: colors.elevated,
+              borderBottom: `1px solid ${colors.border}`,
+              padding: '24px 32px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              zIndex: 10
+            }}>
+              <h2 style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '16px',
+                fontWeight: 600,
+                color: colors.primary,
+                margin: 0,
+                letterSpacing: '0.1em'
+              }}>
+                DATENSCHUTZ
+              </h2>
+              <button
+                onClick={onClose}
+                data-hover="true"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: colors.muted,
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  transition: 'color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.color = colors.primary}
+                onMouseLeave={(e) => e.target.style.color = colors.muted}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '32px' }}>
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>1. Verantwortliche Stelle</h3>
+                <p style={textStyle}>
+                  SugarandSpice GmbH<br/>
+                  Zürich, Schweiz<br/>
+                  hello@sugarandspice.ch
+                </p>
+              </div>
+
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>2. Erhebung und Verarbeitung von Daten</h3>
+                <p style={textStyle}>
+                  Diese Website erhebt keine personenbezogenen Daten automatisch.
+                  Bei Kontaktaufnahme per E-Mail werden die von Ihnen mitgeteilten Daten
+                  (Name, E-Mail-Adresse, Nachricht) zur Bearbeitung Ihrer Anfrage gespeichert.
+                </p>
+              </div>
+
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>3. Cookies</h3>
+                <p style={textStyle}>
+                  Diese Website verwendet keine Tracking-Cookies und keine Analyse-Tools.
+                  Es werden keine Daten an Dritte weitergegeben.
+                </p>
+              </div>
+
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>4. Hosting</h3>
+                <p style={textStyle}>
+                  Diese Website wird bei Vercel Inc. (USA) gehostet. Vercel kann
+                  technische Daten wie IP-Adressen in Server-Logs erfassen.
+                  Weitere Informationen: vercel.com/legal/privacy-policy
+                </p>
+              </div>
+
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>5. Ihre Rechte</h3>
+                <p style={textStyle}>
+                  Gemäss dem Schweizer Datenschutzgesetz (DSG) haben Sie das Recht auf:<br/>
+                  • Auskunft über Ihre gespeicherten Daten<br/>
+                  • Berichtigung unrichtiger Daten<br/>
+                  • Löschung Ihrer Daten<br/>
+                  • Einschränkung der Verarbeitung<br/>
+                  • Datenübertragbarkeit<br/><br/>
+                  Kontaktieren Sie uns unter hello@sugarandspice.ch für Anfragen.
+                </p>
+              </div>
+
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>6. Änderungen</h3>
+                <p style={textStyle}>
+                  Wir behalten uns vor, diese Datenschutzerklärung anzupassen,
+                  um sie an geänderte Rechtslagen oder Änderungen unserer Website anzupassen.
+                </p>
+              </div>
+
+              <div style={{ ...textStyle, color: colors.muted, marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${colors.border}` }}>
+                Stand: Januar 2026
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function NerdEggModal({ show, onClose }) {
       const [tongueOut, setTongueOut] = useState(false);
 
@@ -1497,6 +1665,7 @@
       const [sassyMode, setSassyMode] = useState(false);
       const [showNerdEgg, setShowNerdEgg] = useState(false);
       const [logoClicks, setLogoClicks] = useState(0);
+      const [showPrivacy, setShowPrivacy] = useState(false);
       const footerRef = useRef(null);
       const isMobile = useIsMobile();  // for navigation (hamburger on tablet)
       const isCompact = useIsCompact(); // for hero/content layout (smaller breakpoint)
@@ -1568,6 +1737,9 @@
 
           {/* Nerd Easter Egg Modal */}
           <NerdEggModal show={showNerdEgg} onClose={() => setShowNerdEgg(false)} />
+
+          {/* Privacy Modal */}
+          <PrivacyModal show={showPrivacy} onClose={() => setShowPrivacy(false)} />
 
           <div style={{
             backgroundColor: colors.bg,
@@ -1852,8 +2024,6 @@
               )}
             </section>
 
-            {/* Terminal Slider - mobile only, below hero */}
-            {isMobile && <TerminalSlider />}
 
             {/* MANIFESTO */}
             <section id="approach" style={{
@@ -2099,21 +2269,23 @@
               overflow: 'hidden'
             }}>
               <div style={{
-                maxWidth: '100%',
-                width: '100%',
+                maxWidth: '1400px',
                 margin: '0 auto',
                 padding: `0 ${sectionPadding}`,
                 display: 'grid',
                 gridTemplateColumns: isMobile ? '1fr' : '160px 1fr 1fr',
                 gap: isMobile ? '40px' : '100px',
-                alignItems: 'stretch',
+                alignItems: 'start',
                 overflow: 'hidden'
               }}>
                 <div style={{
                   fontSize: '11px',
                   color: colors.muted,
                   letterSpacing: '0.2em',
-                  alignSelf: 'start'
+                  position: isMobile ? 'relative' : 'sticky',
+                  top: isMobile ? '0' : '100px',
+                  alignSelf: 'start',
+                  height: 'fit-content'
                 }}>
                   <span style={{ opacity: 0.3 }}>03</span>
                   <br/>
@@ -2338,25 +2510,39 @@
               position: 'relative',
               zIndex: 50
             }}>
-              <div>{'\u00A9'} 2024 <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary }}>spice</span> GmbH</div>
+              <div>{'\u00A9'} 2026 <span style={{ color: colors.muted }}>sugar</span><span style={{ color: colors.success, fontWeight: 600 }}>_</span><span style={{ color: colors.primary }}>spice</span> GmbH</div>
               <div style={{ display: 'flex', gap: isMobile ? '24px' : '48px' }}>
-                {['Imprint', 'Privacy'].map((link) => (
-                  <Magnetic key={link} strength={0.3}>
-                    <a
-                      href="#"
-                      data-hover="true"
-                      style={{
-                        color: colors.muted,
-                        textDecoration: 'none',
-                        transition: 'color 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.target.style.color = colors.highlight}
-                      onMouseLeave={(e) => e.target.style.color = colors.muted}
-                    >
-                      {link}
-                    </a>
-                  </Magnetic>
-                ))}
+                <Magnetic strength={0.3}>
+                  <a
+                    href="#"
+                    data-hover="true"
+                    style={{
+                      color: colors.muted,
+                      textDecoration: 'none',
+                      transition: 'color 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = colors.highlight}
+                    onMouseLeave={(e) => e.target.style.color = colors.muted}
+                  >
+                    Imprint
+                  </a>
+                </Magnetic>
+                <Magnetic strength={0.3}>
+                  <a
+                    href="#"
+                    data-hover="true"
+                    onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }}
+                    style={{
+                      color: colors.muted,
+                      textDecoration: 'none',
+                      transition: 'color 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = colors.highlight}
+                    onMouseLeave={(e) => e.target.style.color = colors.muted}
+                  >
+                    Privacy
+                  </a>
+                </Magnetic>
               </div>
               <div>Z{'\u00fc'}rich</div>
             </footer>
